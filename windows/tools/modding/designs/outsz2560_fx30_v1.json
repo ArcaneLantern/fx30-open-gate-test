@@ -1,0 +1,189 @@
+{
+ "design": "outsz2560_fx30_v1",
+ "build": "fx30_601",
+ "camera": "ILME-FX30 (FX30), firmware 6.01",
+ "title": "Output size of the stock 4K size class: 3840x2160 to 3840x2560, in the coprocessor's movie size table (RAM) (FX30 6.01 port)",
+ "kind": "ram_words",
+ "artifact": "cpapp-b.bin, RAM only: these bytes are not in the file",
+ "emulated_image_sha256": "2877ba56332e9157bfea7610b2ac8561e6edfbea9c26ff8bafa0531f8fe3a247",
+ "generated_by": "build/build_ram_words_fx30.py",
+ "ported_from": {
+  "design": "outsz2560_v1",
+  "build": "a7iv_602"
+ },
+ "status": "addresses from emulating and reading the FX30's own code; never read or written on an FX30. The same word change (outsz2560_v1) works on the A7 IV (requests 26 to 29, F688, F698, F700); the FX3's outsz2560_fx3_v1 works on the FX3 (2026-11-24)",
+ "table": "movie size table 0x155d40c (base 0x155d3bc + 0x50; 0x4644bc fills it; the reader's tbh 0x480a36, case 3, loads base + 0x88 = 0x155d444)",
+ "summary": {
+  "sites": 1,
+  "bytes": 4,
+  "output_size": [
+   3840,
+   2560
+  ],
+  "picture_bytes_at_format_code_2": 12288000,
+  "stock_output_unit_bytes": 13271040,
+  "goes_with": [
+   "the FX30 sensor-side design (5976 x 3976 first stage)",
+   "no raw-write-buffer change: the FX30's stock id 0x43e unit already holds the 3976-row stage"
+  ]
+ },
+ "emulated": {
+  "function": "0x4644bc",
+  "bytes": 894,
+  "base": "0x155d3bc",
+  "table": "0x155d40c",
+  "stores_into_block": 99,
+  "entries_equal_a7iv_602": true,
+  "entries": [
+   [
+    1920,
+    1080,
+    "0x296"
+   ],
+   [
+    1440,
+    540,
+    "0x296"
+   ],
+   [
+    7680,
+    4320,
+    "0x49e"
+   ],
+   [
+    7680,
+    4320,
+    "0x43f"
+   ],
+   [
+    4096,
+    2160,
+    "0x43e"
+   ],
+   [
+    4096,
+    2160,
+    "0x2d9"
+   ],
+   [
+    3840,
+    2160,
+    "0x43e"
+   ],
+   [
+    3840,
+    2160,
+    "0x2d9"
+   ],
+   [
+    2048,
+    1080,
+    "0x43e"
+   ],
+   [
+    2048,
+    1080,
+    "0x295"
+   ],
+   [
+    1920,
+    1080,
+    "0x43e"
+   ],
+   [
+    1920,
+    1080,
+    "0x295"
+   ],
+   [
+    1920,
+    1080,
+    "0x43e"
+   ],
+   [
+    1920,
+    1080,
+    "0x4fa"
+   ],
+   [
+    1920,
+    1080,
+    "0x43e"
+   ],
+   [
+    1440,
+    1080,
+    "0x295"
+   ]
+  ],
+  "reader": {
+   "switch": "0x480a36",
+   "size_class_field": "[r6 + 0x7c] (A7 IV [r6 + 0x74])",
+   "case_3_code": "0x480a78",
+   "case_3_loads": "0x155d444",
+   "cases_0_to_12_entry_offsets": [
+    null,
+    "0x18",
+    "0x28",
+    "0x38",
+    "0x48",
+    "0x58",
+    "0x78",
+    "0x88",
+    "0xa8",
+    "0x98",
+    "0xb8",
+    "0xc8",
+    null
+   ],
+   "a7iv_602_switch": "0x44566a",
+   "a7iv_602_case_3_loads": "0x143c7bc",
+   "loads_of_base_plus_0x88_in_the_image": [
+    "0x480a80"
+   ]
+  },
+  "output_buffer_id_0x2d9_units": [
+   13271040,
+   13271040,
+   13271040,
+   13271040,
+   13271040,
+   13271040,
+   13271040,
+   13271040,
+   13271040
+  ]
+ },
+ "sites": [
+  {
+   "ram_address": "0x155d444",
+   "old": "000f7008",
+   "new": "000f000a",
+   "note": "size class 3, second entry: output width and height [A7 IV 0x143c7bc]"
+  }
+ ],
+ "guards": [
+  {
+   "ram_address": "0x155d43c",
+   "bytes": "000f70083e040000",
+   "note": "the entry before: 3840, 2160, memory id 0x43e [A7 IV 0x143c7b4]"
+  },
+  {
+   "ram_address": "0x155d448",
+   "bytes": "d9020000",
+   "note": "this entry's memory id, 0x2d9 [A7 IV 0x143c7c0]"
+  }
+ ],
+ "precondition": "none of its own: the table is read when a movie request is set up; write it with the camera in stills, as on the A7 IV",
+ "restore": "write the old word back, or cold boot (the set-up fills the table again at start-up)",
+ "checked_against": [
+  "build/emu_size_table.py fx30_601 (the FX30's set-up run alone; entries equal the A7 IV's)",
+  "the tbh switches of the FX30 (0x480a36) and A7 IV (0x44566a) readers, decoded from the files: cases 0 to 12 pick the same entries (case 0 loads none in either)",
+  "the FX30's DmmCfg.bin: id 0x2d9 = 9 x 13,271,040 bytes, as the A7 IV's"
+ ],
+ "not_shown": [
+  "anything on an FX30",
+  "the FX30's format code in 4K (2 on the A7 IV camera, request 25; at code 3 a 3840x2560 picture would need 14,745,600 bytes, more than the 13,271,040-byte unit)",
+  "that the reader is the only one: the scan for MOVW/MOVT of the base lists every load of base + 0x88 (above)"
+ ]
+}

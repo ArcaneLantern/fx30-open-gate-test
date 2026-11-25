@@ -1,0 +1,420 @@
+{
+ "design": "lcd32dsq_fx30_v1",
+ "build": "fx30_601",
+ "camera": "ILME-FX30 (FX30), firmware 6.01",
+ "title": "FX30 6.01: rear screen shows the open-gate live view at 3:2 (16:9 letterbox ratio 9/16 -> 2/3, frame widgets' 16:9 entries for both panel shapes), and the built-in De-Squeeze Display ratios set for a 3:2 picture (1.3x 1.95:1, 1.5x 2.25:1, 1.6x (1.65) 2.475:1, 2.0x the whole frame at 3:1 with the centre 4:3 crop off)",
+ "kind": "ram_words",
+ "artifact": "cpapp-b.bin 6.01 (ILME-FX30), its loaded image in coprocessor RAM: the words are in the file, the change is made in RAM only",
+ "artifact_sha256": "2877ba56332e9157bfea7610b2ac8561e6edfbea9c26ff8bafa0531f8fe3a247",
+ "generated_by": "build/build_lcd_fx30.py",
+ "ported_from": "lcd32dsq_fx3_v1 (FX3 7.02; its screen part works on two FX3s, 2026-11-24): the FX30's VDF code is the FX3's relocated, so the 30 words are the FX3 design's words at the ported addresses (asserted twin by twin), with the FX3's 32 guards ported (the four crop guards start 2 bytes later: the crop block moved by 0x68bd6)",
+ "address_map_from_fx3_702": {
+  "vdf_block": "+0x3890 (0x1df458.. -> 0x1e2ce8..)",
+  "crop_block": "+0x68bd6 (0x5faf04 -> 0x663ada)",
+  "frame_tables": "0xd2e510 / 0xd2e588 / 0xd2e600 -> 0xde78dc / 0xde7954 / 0xde79cc",
+  "frame_checks": "same addresses (0x128438, 0x128d60, 0x1297e8)"
+ },
+ "checked_against_fx3": {
+  "layout_instructions": [
+   236,
+   16
+  ],
+  "frame_check_instructions": [
+   164,
+   10
+  ],
+  "panel_code_instructions": [
+   84,
+   4
+  ]
+ },
+ "summary": {
+  "sites": 30,
+  "bytes": 120,
+  "guards": 32,
+  "panel": "rear LCD 2,359,296 dots (Sony) = 1024 x 768: 4:3, panel code 0 from type byte 2 expected (type byte RAM 0x16295d4); the design also gives the right picture if the byte says 3 (3:2)",
+  "picture": "16:9 live view (aspect code 2) holding the whole 3:2 sensor area",
+  "ratio_stock": "9/16",
+  "ratio_new": "2/3",
+  "frame_rectangles_new": {
+   "rear output, 4:3 panel": [
+    0,
+    26,
+    640,
+    428
+   ],
+   "rear output, 3:2 panel": [
+    0,
+    0,
+    640,
+    480
+   ],
+   "second output": [
+    0,
+    26,
+    640,
+    428
+   ]
+  },
+  "desqueeze": {
+   "1.3x (code 1)": "45/104 -> 20/39",
+   "1.5x (code 2)": "3/8 -> 4/9",
+   "1.6x = 1.65 (code 3)": "15/44 -> 40/99",
+   "2.0x (code 4)": "3/8 -> 1/3, centre crop off"
+  },
+  "goes_with": [
+   "the FX30 open-gate state (sensor, output-size and encoder steps of fx30_601)"
+  ]
+ },
+ "while_applied": "every 16:9 picture on the rear screen is shown at 3:2 and the de-squeeze ratios are those of a 3:2 picture (other movie formats look wrong there). 2.0x's ratio is the calculator's default for every picture shape and its crop is off for every shape, so 2.0x shows any picture at 3:1 (the open-gate live view is always 16:9). HDMI's own layout and the 17:9 ratios of 1.3x / 1.5x / 1.6x are unchanged",
+ "not_checked": [
+  "on a camera: nothing of this design has run on an FX30",
+  "the FX30's rear panel type byte 0x16295d4 (expected 2 = 4:3 from Sony's 2,359,296 dots = 1024 x 768; a dump should read it)",
+  "that the FX30's menu sends codes 1 to 4 for 1.3x, 1.5x, 1.6x and 2.0x (inferred from the calculator's ratios, as on the FX3)",
+  "whether the focus frames are drawn while de-squeeze is on (the frame check has no de-squeeze input; stock behaves the same)"
+ ],
+ "sites": [
+  {
+   "ram_address": "0x1e2f38",
+   "old": "4ff0030a",
+   "new": "4ff0010a",
+   "note": "de-squeeze 2.0x (the default ratio, used only by code 4): 3 -> 1"
+  },
+  {
+   "ram_address": "0x1e2f3c",
+   "old": "0825dfe8",
+   "new": "0325dfe8",
+   "note": "de-squeeze 2.0x: 8 -> 3 (1/3: 3:1, the whole 3:2 frame)"
+  },
+  {
+   "ram_address": "0x1e2f90",
+   "old": "4ff02d0a",
+   "new": "4ff0140a",
+   "note": "de-squeeze 1.3x, 16:9 picture: 45 -> 20"
+  },
+  {
+   "ram_address": "0x1e2f94",
+   "old": "682506e0",
+   "new": "272506e0",
+   "note": "de-squeeze 1.3x: 104 -> 39 (height = width x 20/39: 1.95:1)"
+  },
+  {
+   "ram_address": "0x1e2f98",
+   "old": "4ff0030a",
+   "new": "4ff0040a",
+   "note": "de-squeeze 1.5x, 16:9 picture: 3 -> 4"
+  },
+  {
+   "ram_address": "0x1e2f9c",
+   "old": "082502e0",
+   "new": "092502e0",
+   "note": "de-squeeze 1.5x: 8 -> 9 (4/9: 2.25:1)"
+  },
+  {
+   "ram_address": "0x1e2fa0",
+   "old": "4ff00f0a",
+   "new": "4ff0280a",
+   "note": "de-squeeze 1.6x (1.65), 16:9 picture: 15 -> 40"
+  },
+  {
+   "ram_address": "0x1e2fa4",
+   "old": "2c257869",
+   "new": "63257869",
+   "note": "de-squeeze 1.6x (1.65): 44 -> 99 (40/99: 2.475:1)"
+  },
+  {
+   "ram_address": "0x1e3048",
+   "old": "4ff0090e",
+   "new": "4ff0020e",
+   "note": "picture-ratio function, 16:9 picture: numerator 9 -> 2"
+  },
+  {
+   "ram_address": "0x1e304c",
+   "old": "102007e0",
+   "new": "032007e0",
+   "note": "picture-ratio function, 16:9 picture: denominator 16 -> 3"
+  },
+  {
+   "ram_address": "0x663b0c",
+   "old": "04285ad1",
+   "new": "05285ad1",
+   "note": "2.0x centre crop, first path: code 4 -> 5 (never): no crop"
+  },
+  {
+   "ram_address": "0x663b3c",
+   "old": "41e00428",
+   "new": "41e00528",
+   "note": "2.0x centre crop, second path: code 4 -> 5 (never): no crop"
+  },
+  {
+   "ram_address": "0xde78f4",
+   "old": "00003c00",
+   "new": "00001a00",
+   "note": "cpActAfWindow (focus area frames), row 0 (rear output, 4:3 panel), 16:9 column, x, y: (0, 60, 640, 360) to (0, 26, 640, 428) (FX3 0xd2e528)"
+  },
+  {
+   "ram_address": "0xde78f8",
+   "old": "80026801",
+   "new": "8002ac01",
+   "note": "cpActAfWindow (focus area frames), row 0 (rear output, 4:3 panel), 16:9 column, w, h: (0, 60, 640, 360) to (0, 26, 640, 428) (FX3 0xd2e52c)"
+  },
+  {
+   "ram_address": "0xde791c",
+   "old": "00002600",
+   "new": "00000000",
+   "note": "cpActAfWindow (focus area frames), row 1 (rear output, 3:2 panel), 16:9 column, x, y: (0, 38, 640, 404) to (0, 0, 640, 480) (FX3 0xd2e550)"
+  },
+  {
+   "ram_address": "0xde7920",
+   "old": "80029401",
+   "new": "8002e001",
+   "note": "cpActAfWindow (focus area frames), row 1 (rear output, 3:2 panel), 16:9 column, w, h: (0, 38, 640, 404) to (0, 0, 640, 480) (FX3 0xd2e554)"
+  },
+  {
+   "ram_address": "0xde7944",
+   "old": "00003c00",
+   "new": "00001a00",
+   "note": "cpActAfWindow (focus area frames), row 2 (second output), 16:9 column, x, y: (0, 60, 640, 360) to (0, 26, 640, 428) (FX3 0xd2e578)"
+  },
+  {
+   "ram_address": "0xde7948",
+   "old": "80026801",
+   "new": "8002ac01",
+   "note": "cpActAfWindow (focus area frames), row 2 (second output), 16:9 column, w, h: (0, 60, 640, 360) to (0, 26, 640, 428) (FX3 0xd2e57c)"
+  },
+  {
+   "ram_address": "0xde796c",
+   "old": "00003c00",
+   "new": "00001a00",
+   "note": "cpActAfWindowRemoteSend (the same frames for a remote viewer), row 0 (rear output, 4:3 panel), 16:9 column, x, y: (0, 60, 640, 360) to (0, 26, 640, 428) (FX3 0xd2e5a0)"
+  },
+  {
+   "ram_address": "0xde7970",
+   "old": "80026801",
+   "new": "8002ac01",
+   "note": "cpActAfWindowRemoteSend (the same frames for a remote viewer), row 0 (rear output, 4:3 panel), 16:9 column, w, h: (0, 60, 640, 360) to (0, 26, 640, 428) (FX3 0xd2e5a4)"
+  },
+  {
+   "ram_address": "0xde7994",
+   "old": "00002600",
+   "new": "00000000",
+   "note": "cpActAfWindowRemoteSend (the same frames for a remote viewer), row 1 (rear output, 3:2 panel), 16:9 column, x, y: (0, 38, 640, 404) to (0, 0, 640, 480) (FX3 0xd2e5c8)"
+  },
+  {
+   "ram_address": "0xde7998",
+   "old": "80029401",
+   "new": "8002e001",
+   "note": "cpActAfWindowRemoteSend (the same frames for a remote viewer), row 1 (rear output, 3:2 panel), 16:9 column, w, h: (0, 38, 640, 404) to (0, 0, 640, 480) (FX3 0xd2e5cc)"
+  },
+  {
+   "ram_address": "0xde79bc",
+   "old": "00003c00",
+   "new": "00001a00",
+   "note": "cpActAfWindowRemoteSend (the same frames for a remote viewer), row 2 (second output), 16:9 column, x, y: (0, 60, 640, 360) to (0, 26, 640, 428) (FX3 0xd2e5f0)"
+  },
+  {
+   "ram_address": "0xde79c0",
+   "old": "80026801",
+   "new": "8002ac01",
+   "note": "cpActAfWindowRemoteSend (the same frames for a remote viewer), row 2 (second output), 16:9 column, w, h: (0, 60, 640, 360) to (0, 26, 640, 428) (FX3 0xd2e5f4)"
+  },
+  {
+   "ram_address": "0xde79e4",
+   "old": "00003c00",
+   "new": "00001a00",
+   "note": "cpActTrackingFrame (tracking and face frames), row 0 (rear output, 4:3 panel), 16:9 column, x, y: (0, 60, 640, 360) to (0, 26, 640, 428) (FX3 0xd2e618)"
+  },
+  {
+   "ram_address": "0xde79e8",
+   "old": "80026801",
+   "new": "8002ac01",
+   "note": "cpActTrackingFrame (tracking and face frames), row 0 (rear output, 4:3 panel), 16:9 column, w, h: (0, 60, 640, 360) to (0, 26, 640, 428) (FX3 0xd2e61c)"
+  },
+  {
+   "ram_address": "0xde7a0c",
+   "old": "00002600",
+   "new": "00000000",
+   "note": "cpActTrackingFrame (tracking and face frames), row 1 (rear output, 3:2 panel), 16:9 column, x, y: (0, 38, 640, 404) to (0, 0, 640, 480) (FX3 0xd2e640)"
+  },
+  {
+   "ram_address": "0xde7a10",
+   "old": "80029401",
+   "new": "8002e001",
+   "note": "cpActTrackingFrame (tracking and face frames), row 1 (rear output, 3:2 panel), 16:9 column, w, h: (0, 38, 640, 404) to (0, 0, 640, 480) (FX3 0xd2e644)"
+  },
+  {
+   "ram_address": "0xde7a34",
+   "old": "00003c00",
+   "new": "00001a00",
+   "note": "cpActTrackingFrame (tracking and face frames), row 2 (second output), 16:9 column, x, y: (0, 60, 640, 360) to (0, 26, 640, 428) (FX3 0xd2e668)"
+  },
+  {
+   "ram_address": "0xde7a38",
+   "old": "80026801",
+   "new": "8002ac01",
+   "note": "cpActTrackingFrame (tracking and face frames), row 2 (second output), 16:9 column, w, h: (0, 60, 640, 360) to (0, 26, 640, 428) (FX3 0xd2e66c)"
+  }
+ ],
+ "guards": [
+  {
+   "ram_address": "0x1e3024",
+   "bytes": "80b56f46d7f80cc0052b2fd84ff0030e",
+   "note": "first 16 bytes of the picture-ratio function 0x1e3024, as in the file"
+  },
+  {
+   "ram_address": "0x1e3038",
+   "bytes": "03f01303070b2b0f4ff0020e03200be0",
+   "note": "the ratio function's case table and its own 3:2 case (lr 2, r0 3), as in the file"
+  },
+  {
+   "ram_address": "0x1e3050",
+   "bytes": "01204ff0010e03e04ff0870e4ff48070",
+   "note": "the ratio function after the 16:9 case (1:1 and 17:9 cases), as in the file"
+  },
+  {
+   "ram_address": "0x1e2ce8",
+   "bytes": "02468a4201d1002070470020052918d8",
+   "note": "first 16 bytes of the fit-mode function 0x1e2ce8, as in the file"
+  },
+  {
+   "ram_address": "0x1e2d38",
+   "bytes": "0300000003000000",
+   "note": "fit mode of a 16:9 picture on a 4:3 and on a 3:2 panel: 3, 3 (letterbox: what makes the ratio count), as in the file"
+  },
+  {
+   "ram_address": "0x1e2f10",
+   "bytes": "f0b503af2de90007d7f810900c461e46",
+   "note": "first 16 bytes of the de-squeeze calculator 0x1e2f10, as in the file"
+  },
+  {
+   "ram_address": "0x1e2f20",
+   "bytes": "d9f80000d0f85817484688470078d7f8",
+   "note": "the calculator's read of the de-squeeze code (accessor slot 0x758) and its range check, as in the file"
+  },
+  {
+   "ram_address": "0x1e2f40",
+   "bytes": "00f0020b1332022e22d0052e15d140f2",
+   "note": "the code table and the 1.3x 17:9 branch (17:9 ratios left alone), as in the file"
+  },
+  {
+   "ram_address": "0x1e2f80",
+   "bytes": "a8f80200200ca8f80440a8f8060045e0",
+   "note": "the whole-output path before the 16:9 ratios, as in the file"
+  },
+  {
+   "ram_address": "0x1e2fa8",
+   "bytes": "a8f80440042819d1d9f80000d0f89816",
+   "note": "the height calculation after the ratios, as in the file"
+  },
+  {
+   "ram_address": "0x663adc",
+   "bytes": "03af4df8048d164680460d46304613f0",
+   "note": "the input-crop function 0x663ada from its second halfword (de-squeeze active test), as in the file"
+  },
+  {
+   "ram_address": "0x663afc",
+   "bytes": "3068d0f85817304688470078012c18d1",
+   "note": "the crop function's read of the de-squeeze code, up to the first code test, as in the file"
+  },
+  {
+   "ram_address": "0x663b10",
+   "bytes": "a87f05282dd0022855d1b8f80c10b8f8",
+   "note": "the first crop path after the code test, as in the file"
+  },
+  {
+   "ram_address": "0x663b44",
+   "bytes": "1200062101eb80004af6ab21caf6aa21",
+   "note": "the second crop path after the code test (width = (4h + 6) / 3), as in the file"
+  },
+  {
+   "ram_address": "0xde78ec",
+   "bytes": "6a000000ac01ac01",
+   "note": "cpActAfWindow row 0, the entry before the 16:9 entry (1:1), as in the file"
+  },
+  {
+   "ram_address": "0xde78fc",
+   "bytes": "0000470080025201",
+   "note": "cpActAfWindow row 0, the entry after the 16:9 entry (17:9), as in the file"
+  },
+  {
+   "ram_address": "0xde7914",
+   "bytes": "6b000000aa01e001",
+   "note": "cpActAfWindow row 1, the entry before the 16:9 entry (1:1), as in the file"
+  },
+  {
+   "ram_address": "0xde7924",
+   "bytes": "0000320080027c01",
+   "note": "cpActAfWindow row 1, the entry after the 16:9 entry (17:9), as in the file"
+  },
+  {
+   "ram_address": "0xde793c",
+   "bytes": "6a001a00ac01ac01",
+   "note": "cpActAfWindow row 2, the entry before the 16:9 entry (1:1), as in the file"
+  },
+  {
+   "ram_address": "0xde794c",
+   "bytes": "0000470080025201",
+   "note": "cpActAfWindow row 2, the entry after the 16:9 entry (17:9), as in the file"
+  },
+  {
+   "ram_address": "0xde7964",
+   "bytes": "6a000000ac01ac01",
+   "note": "cpActAfWindowRemoteSend row 0, the entry before the 16:9 entry (1:1), as in the file"
+  },
+  {
+   "ram_address": "0xde7974",
+   "bytes": "0000470080025201",
+   "note": "cpActAfWindowRemoteSend row 0, the entry after the 16:9 entry (17:9), as in the file"
+  },
+  {
+   "ram_address": "0xde798c",
+   "bytes": "6b000000aa01e001",
+   "note": "cpActAfWindowRemoteSend row 1, the entry before the 16:9 entry (1:1), as in the file"
+  },
+  {
+   "ram_address": "0xde799c",
+   "bytes": "0000320080027c01",
+   "note": "cpActAfWindowRemoteSend row 1, the entry after the 16:9 entry (17:9), as in the file"
+  },
+  {
+   "ram_address": "0xde79b4",
+   "bytes": "6a001a00ac01ac01",
+   "note": "cpActAfWindowRemoteSend row 2, the entry before the 16:9 entry (1:1), as in the file"
+  },
+  {
+   "ram_address": "0xde79c4",
+   "bytes": "0000470080025201",
+   "note": "cpActAfWindowRemoteSend row 2, the entry after the 16:9 entry (17:9), as in the file"
+  },
+  {
+   "ram_address": "0xde79dc",
+   "bytes": "6a000000ac01ac01",
+   "note": "cpActTrackingFrame row 0, the entry before the 16:9 entry (1:1), as in the file"
+  },
+  {
+   "ram_address": "0xde79ec",
+   "bytes": "0000470080025201",
+   "note": "cpActTrackingFrame row 0, the entry after the 16:9 entry (17:9), as in the file"
+  },
+  {
+   "ram_address": "0xde7a04",
+   "bytes": "6b000000aa01e001",
+   "note": "cpActTrackingFrame row 1, the entry before the 16:9 entry (1:1), as in the file"
+  },
+  {
+   "ram_address": "0xde7a14",
+   "bytes": "0000320080027c01",
+   "note": "cpActTrackingFrame row 1, the entry after the 16:9 entry (17:9), as in the file"
+  },
+  {
+   "ram_address": "0xde7a2c",
+   "bytes": "6a001a00ac01ac01",
+   "note": "cpActTrackingFrame row 2, the entry before the 16:9 entry (1:1), as in the file"
+  },
+  {
+   "ram_address": "0xde7a3c",
+   "bytes": "0000470080025201",
+   "note": "cpActTrackingFrame row 2, the entry after the 16:9 entry (17:9), as in the file"
+  }
+ ]
+}

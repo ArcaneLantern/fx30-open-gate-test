@@ -1,0 +1,29 @@
+{
+ "about": "Where the screen design lcd32dsq_fx30_v1 may have a site, and where only a guard (FX30 6.01 cpapp-b.bin addresses; build/build_lcd_fx30.py, modding/FX30_PORT_SCREEN.md). The FX3 kit's regions (helper_fx3/gen_fx3_write.WORD_REGIONS['lcd32dsq_fx3_v1']) ported: VDF block +0x3890, crop block +0x68bd6, frame tables 0xd2e510.. -> 0xde78dc... Read by gen_fx30_write.py as gen_fx2_write.py reads lcd_regions_fx2.json.",
+ "lcd32dsq_fx30_v1": {
+  "sites": [["0x1e2f38", "0x1e2f40"], ["0x1e2f90", "0x1e2fa8"], ["0x1e3048", "0x1e3050"], ["0x663b0c", "0x663b10"], ["0x663b3c", "0x663b40"],
+            ["0xde78dc", "0xde7954"], ["0xde7954", "0xde79cc"], ["0xde79cc", "0xde7a44"]],
+  "sites_note": "the de-squeeze calculator 0x1e2f10's 2.0x default ratio words and its 1.3x/1.5x/1.65x 16:9 ratio words; the picture-ratio function 0x1e3024's 16:9 constants; the words holding the two code compares of the 2.0x crop 0x663ada; the three frame tables (cpActAfWindow, cpActAfWindowRemoteSend, cpActTrackingFrame)",
+  "guards": [["0x1e2ce8", "0x1e2d7c"], ["0x1e2f10", "0x1e3114"], ["0x663ada", "0x663bcc"]],
+  "guards_note": "a guard may also lie in the fit-mode function 0x1e2ce8 with its tables, the two calculators (0x1e2f10, 0x1e3024) or the crop function 0x663ada"
+ },
+ "dump_decoder": {
+  "about": "FX30 6.01 coprocessor RAM the read-only dump should copy and decode for the screen step (the FX3 decoder's items at FX30 addresses). Panel type: 2 = 4:3, 3 = 3:2, 1 = 16:9 (type -> panel code 0x1e38e0, tables 0x1e3984 / 0xc44f34, the FX3's).",
+  "panel_type_rear": "0x16295d4",
+  "panel_type_rear_note": "byte [0x16295b8 + 0x1c], read by 0x647c42 (>= 4 -> 1); FX3 0x14909e4. Expected 2 (4:3): Sony gives the FX30 monitor as 2,359,296 dots = 1024 x 768 x 3",
+  "panel_type_second": "0x1629704",
+  "panel_type_second_note": "byte [0x16296e8 + 0x1c], read by 0x647c54 (>= 2 -> 2); the FX30 has no viewfinder: the second output",
+  "pages": ["0x1e2000", "0x1e3000", "0x663000", "0xde7000", "0x1629000"],
+  "fit_words_169": ["0x1e2d38", "0x1e2d3c"],
+  "fit_words_note": "fit mode of a 16:9 picture on panel code 0 (4:3) and 1 (3:2): 3, 3 stock, left alone by the design",
+  "ratio_169": {"address": "0x1e3048", "stock": "4ff0090e102007e0", "patched": "4ff0020e032007e0", "note": "mov.w lr, #9 / movs r0, #16 -> #2 / #3"},
+  "desqueeze_words": {"0x1e2f38": "2.0x n (sl) 3 -> 1", "0x1e2f3c": "2.0x d (r5) 8 -> 3", "0x1e2f90": "1.3x n 45 -> 20", "0x1e2f94": "1.3x d 104 -> 39",
+                      "0x1e2f98": "1.5x n 3 -> 4", "0x1e2f9c": "1.5x d 8 -> 9", "0x1e2fa0": "1.65x n 15 -> 40", "0x1e2fa4": "1.65x d 44 -> 99"},
+  "crop_words": {"0x663b0c": "first path: 04285ad1 stock (cmp r0, #4) -> 05285ad1", "0x663b3c": "second path: 41e00428 stock (cmp r0, #4 at +2) -> 41e00528"},
+  "frame_tables": {"cpActAfWindow": "0xde78dc", "cpActAfWindowRemoteSend": "0xde7954", "cpActTrackingFrame": "0xde79cc"},
+  "frame_table_layout": "3 rows (0 rear 4:3 panel, 1 rear 3:2 panel, 2 second output) x 5 aspect columns x (x, y, w, h) u16; the 16:9 column is entry 3: row r at table + 8 * (5 * r + 3)",
+  "frame_rows_169_stock": {"0": [0, 60, 640, 360], "1": [0, 38, 640, 404], "2": [0, 60, 640, 360]},
+  "frame_rows_169_patched": {"0": [0, 26, 640, 428], "1": [0, 0, 640, 480], "2": [0, 26, 640, 428]},
+  "desqueeze_code_note": "the code itself (0 off, 1 1.3x, 2 1.5x, 3 1.6x = 1.65, 4 2.0x) is read through the VDF accessor's slot 0x758 at run time; its RAM place is not established"
+ }
+}
