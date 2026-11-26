@@ -1,6 +1,27 @@
 # FX30 6.01 port notes
 
-Everything here was read from the FX30 6.01 firmware update (`BODYDATA.DAT`, SHA-256 `33f287f3…28f9`, from Sony's support site) and checked in emulation. **Nothing has run on an FX30.** The working references are the open-gate states that record on the A7 IV (sensor method), the A7S III and the FX3 (kit shape, encoder, screen).
+Everything here was read from the FX30 6.01 firmware update (`BODYDATA.DAT`, SHA-256 `33f287f3…28f9`, from Sony's support site) and checked in emulation. The working references are the open-gate states that record on the A7 IV (sensor method), the A7S III and the FX3 (kit shape, encoder, screen).
+
+**Camera runs so far.** Kit v1 ran on three FX30s (2026-11-25/26; one PAL with three dumps, two NTSC in the repo's issues 1 and 2). Kit v2 has not run.
+
+## What the v1 runs showed
+
+- **Worked as built:** the identity check (READY), all four write steps on NTSC and PAL, the PAL variant of the stored records, the MP4 headers (3840 × 2560), the screen step (30 words, 3:2 layout), the closing dump. The rear panel is type 2, **4:3**.
+- **Fault:** the picture filled the top 2160 of 2560 rows with normal proportions and black below; colours shifted towards blue and dark levels were crushed.
+- **Cause.** The dump's sensor register shadow, taken after the patch in movie mode, still held the stock window:
+
+  | Register | Meaning | Held (stock) | The records said |
+  |---|---|---|---|
+  | 6 / 7 | first row + 81 | 487 (row 406) | row 96 |
+  | 8 / 9 | line pairs | 1680 (3348 rows) | 3968 rows |
+  | 14 | first phase-detect block | 9 | 2 |
+  | 16 | phase-detect rows / 2 | 34 | 41 |
+  | 25 | lead-in line pairs | 41 | 48 |
+
+  These registers come from the register matrix. v1 took the matrix to start at `0x1038e48` (139 rows). It starts at **`0x1038d1c` (154 rows)**: the 15 rows v1 skipped are exactly these. So v1's statement "columns 1, 2, 8 and 9 are identical, the window is not in the matrix" was wrong, and v1 never wrote the sensor's window.
+- **How the numbers fit:** 3348 of 3968 rows = 2160 of 2560, and 3348 rows squeezed and stretched by the designed factors keep normal proportions.
+- **Also seen under v1:** one camera restarted when File Format was changed to XAVC HS with the patch applied (cause not known); on first entry to MOVIE the screen can show a 16:9 layout until MENU is opened and closed.
+- **Harmless lines:** `read failed -21` (ten per write step: directories under `/proc/driver/pcie`) and `truncated at 2048 bytes` (two per dump: a long `/proc` file).
 
 ## Which body the FX30 is like
 
@@ -13,7 +34,7 @@ Everything here was read from the FX30 6.01 firmware update (`BODYDATA.DAT`, SHA
   - The encoder tables, MP4 writer and playback decoder are the FX3's (av-cam shift +0xee1c).
   - The display code is the FX3's (`+0x3890`, the 2.0x crop `+0x68bd6`).
 
-## Sensor side: `ogsq_fx30_v1` (step L5)
+## Sensor side: `ogsq_fx30_v2` (step L5)
 
 **What the FX30 does in 4K 16:9** (all asserted by `build/build_og_fx30.py`):
 
@@ -27,23 +48,41 @@ Everything here was read from the FX30 6.01 firmware update (`BODYDATA.DAT`, SHA
   | `0x890` / `0x8d0` | the same rates at line length 360 | |
 
 - **Records.** The record selector `0x73ccde` gives all five modes the same picture-record pair `0xc79440` / `0xc79ff8` (frame 5976 × 3356, crop 5952 × 3348, first stage 4336 × 2438).
-- **The window is not in the register matrix** (`0x1038e48`, 139 rows of 20 bytes). Columns 1 (5952 × 3348), 2 (5612 × 3156), 8 (4648 × 2616) and 9 (5952 × 3140) are byte-identical. The window comes from the per-mode tables, through the stored drive-parameter record that the calculator `0x354204` computes from them at start-up.
+- **The register matrix** `0x1038d1c`: 154 rows of 20 bytes (the address of a register's value in the shadow, 14 column bytes, 2 spare), a zero row, then the column map.
+  - The routine `0x8e8218` is the only code that names it: it takes the mode's column from the column map and copies each row's column byte to the shadow (4-byte entries {register, value} from `0x1123de4`).
+  - Columns 1 (5952 × 3348), 2 (5612 × 3156), 8 (4648 × 2616) and 9 (5952 × 3140) use the same sensor mode (register 1 = 15) and differ only in seven rows, which follow each mode's own table rows:
 
-**The design.** A 5952 × 3968 (3:2) window from row 96, centred where the 16:9 one is (row 2080), keeping column 1 and the 4K line timing:
+    | Register | Rule | Columns 1, 2, 8, 9 |
+    |---|---|---|
+    | 6 / 7 | window row + 81 | 487, 583, 851, 591 |
+    | 8 / 9 | (height + the four margins) / 2 | 1680, 1584, 1316, 1576 |
+    | 14 | first phase-detect block (= crop +18) | 9, 11, 16, 11 |
+    | 16 | phase-detect rows / 2 | 34, 32, 27, 32 |
+    | 25 | read-out f2 (= read-out +4) | 41, 40, 34, 39 |
 
-| Table (row size) | Field | Stock → design | Rule it follows (all FX30 movie modes) |
+**The design.** A 5952 × 3968 (3:2) window from row 94, keeping sensor mode 15 and the 4K line timing, written in the sensor's registers and in the tables that describe it:
+
+| Where (row size) | Field | Stock → design | Rule it follows |
 |---|---|---|---|
-| geometry `0xcb57a8..` (12, by mode id) | +10 window row | 406 → 96 | = crop row |
-| crop `0xd10de4` (20) | +6 window row | 406 → 96 | |
-| crop | +18 first phase-detect block k | 9 → 2 | LC +12 = 25 + 48 k |
+| matrix column 1, registers 6 / 7 | first row + 81 | 487 → 175 | all four columns |
+| matrix column 1, registers 8 / 9 | line pairs | 1680 → 1990 | all four columns |
+| matrix column 1, registers 14, 16, 25 | first block, phase-detect pairs, f2 | 9 → 2, 34 → 41, 41 → 48 | all four columns |
+| geometry `0xcb57a8..` (12, by mode id) | +10 window row | 406 → 94 | = crop row |
+| crop `0xd10de4` (20) | +6 window row | 406 → 94 | |
+| crop | +18 first phase-detect block k | 9 → 2 | LC +12 = 25 + 48 k in every mode |
 | stream-0 `0xe0278a` (38) | +26 window height | 3348 → 3968 | |
 | stream-1 `0xe02c24` (38) | +26 phase-detect rows p | 68 → 82 | blocks at rows 25 + 48 j inside the window's margins |
-| LC `0xe030be` (14) | +8 window row, +12 first phase-detect row | 406 → 96, 457 → 121 | |
+| LC `0xe030be` (14) | +8 window row, +12 first phase-detect row | 406 → 94, 457 → 121 | |
 | read-out `0xe03270` (14) | +4 f2 (line pairs ahead of the picture) | 41 → 48 | 2 f2 = p + 14 at line 340 |
-| read-out | +12 read-out length (line periods) | 1704 → 2014 | (rows + 12) / 2 + 24 |
+| read-out | +12 read-out length (line periods) | 1704 → 2014 | line pairs + 24 |
 
-- Row 96 puts the first and last phase-detect block well inside every margin the four stock movie windows allow (blocks j = 2..83).
-- **Read-out.** The read-out (2,014 line periods) fits a 24p frame (4,410) and a 30p one (3,528) with room. The rows end at 4,070, below 4,096.
+- **Why row 94.** All four stock windows of this sensor mode start at a row that is 2 modulo 4 (406, 502, 770, 510), and the 4648 × 2616 one sits two rows off the centre 2080 to keep that. Row 94 keeps it (v1 had 96). Its first and last phase-detect blocks lie 33 rows after the outer window's start and 59 before its end; stock shows 31 and 57 as inside (blocks j = 2..83).
+- **Checked on the firmware's own routine** (`build/emu_sensor_regs_fx30.py`): `0x8e8218` run for every drive mode, stock and with the design. Stock mode `0x8c0` gives the registers a real camera held after v1 (153 of 154 equal; the other is rewritten while running). With the design, the five modes get 3968 rows from row 94 and no other mode or register changes.
+- **Variant B, `ogsq_fx30_v2b` (steps B5 / B6), for an A/B test.** The values suggested in the repo's issue 1: LC +12 = window row + 51 = 145 (v2: 121) and read-out length 2020 (v2: 2014). Stock contradicts "row + 51" as a rule (DCI 510 → 553, Super 35 770 → 793; 145 is off the 48-row grid), so v2 stays the default. But the report of clean colour may come from a state whose sensor was on the tall window, so the values are carried.
+  - It differs from v2 in 20 bytes: one byte of the LC row and one of the read-out row in each of the five modes, and two bytes in each stored record (`+0x142`, `+0x15a`). The calculator derives nothing else from them.
+  - Sensor registers and picture records are v2's. Each variant's steps write nothing over the other variant (emulated both ways), and the put back finds which one is in memory.
+  - The read-only helper reports those sites as TARGET (v2) or TARGET-B; both count as READY.
+- **Read-out.** The read-out (2,014 line periods) fits a 24p frame (4,410) and a 30p one (3,528) with room. The window ends at row 4,062, inside the sensor's 4,128.
 - **Picture records** (`0xc79440` / `0xc79ff8`):
   - first stage 5976 × 3976, crop 5952 × 3968, squeezed by the first scaler into the stock 4336 × 2438 front end (vertical step 6667/4096 = 1.63);
   - 166 fields per record differ from stock;
@@ -109,7 +148,7 @@ The FX3 kit's design moved, 30 words and 32 guards (`modding/FX30_PORT_SCREEN.md
 | de-squeeze ratios | `0x1e2f38..`, `0x1e2f90..` | 1.3x 20/39, 1.5x 4/9, 1.6x 40/99, 2.0x 1/3 |
 | 2.0x centre crop | `0x663b0c`, `0x663b3e` | off |
 
-- **Panel-type bytes:** rear `0x16295d4`, second output `0x1629704`. Expected 4:3 (2,359,296 dots = 1024 × 768), not read yet.
+- **Panel-type bytes:** rear `0x16295d4`, second output `0x1629704`. Read on three cameras: rear type 2 = **4:3** (2,359,296 dots = 1024 × 768), second output 0.
 - **Checks:** Unicorn 32 cases, qemu-arm 156 cases.
 
 ## Playback step (optional): `avdec8k_fx30_v1` (P29 / P30)
@@ -125,25 +164,31 @@ As on the FX3, create-ch `0x21738c` always opens row 0 (4096 × 2160) with the 4
 
 ## The helper and its checks
 
-- **Read-only** `fx30read_v1` (`helper_fx30/fx30read.c` = the FX2/FX3 helper with text changes):
+- **Read-only** `fx30read_v2` (`helper_fx30/fx30read.c` = the FX2/FX3 helper with text changes):
   - identity: three libraries and four coprocessor code pages (`0x128000`, `0x73c000`, `0x464000`, `0x8e7000`);
-  - 46 coprocessor sites (8 sensor, 5 stored records, output size, 30 screen words), 6 libmpr and 101 av-cam sites;
+  - 47 coprocessor sites (9 sensor, one of them the matrix's window rows; 5 stored records, output size, 30 screen words), 6 libmpr and 101 av-cam sites;
   - the dump adds 13 page ranges: register shadow `0x1123000`, matrix, records, size table, the image processor's kprint and boot logs, the resize module `0x1571000` / `0x12dd000`, the panel page and the display pages.
-  - **Emulation (`emu_fx30.py`): 24 cases pass**, including a PAL camera, the FX3, FX2 and A7 IV refused, and the FX3, FX2, ZV-E1 and A7S III kits' checks saying NOT READY on an FX30.
+  - **The PC's reading of a dump** (`fx30_run.py`) now decodes the sensor's window registers from the shadow, compares them with the five stored records, and adds a problem line when they disagree.
+  - **Emulation (`emu_fx30.py`): 30 cases pass** (with variant B applied: TARGET-B on its seven sites, READY), including a camera in 4K movie mode, a PAL camera, a camera that still holds kit v1 (NOT READY), the FX3, FX2 and A7 IV refused, and the FX3, FX2, ZV-E1 and A7S III kits' checks saying NOT READY on an FX30.
+  - **Dump reading (`test_fx30_dump_decode.py`): 14 checks pass** (variant B is read as B on NTSC and PAL): stock in stills and in 4K movie, v2 applied (NTSC and PAL) → sensor and records agree; kit v1's state → they do not, and a problem line says so; the tester's three real v1 dumps give that same reading (those dumps are private and not in the repo, so that part is skipped there).
 - **Write levels** (`helper/readcheck.c`):
   - L5/L6 use a new `MULTI_REC` path: five stored records, each in two timing variants. Sensor object `0x13bd0d8` → control → `+0x690` → drive-parameter object. The control object's constructor stores it there, as the A7 IV's stores `+0x684`.
-  - Builds without the switch are unchanged: the preprocessed source of every kit's level 5/6 configuration is identical (138 configurations).
-  - **Emulation (`emu_fx30_write.py`): 87 cases pass:**
+  - Builds without the switch are unchanged: the preprocessed source of every kit's level 5/6 configuration is identical (138 configurations). v2 did not touch `readcheck.c`: only L5, L6, check and dump have new hashes, and B5 / B6 are new.
+  - **Emulation (`emu_fx30_write.py`): 113 cases pass:**
     - NTSC and PAL apply / again / put back;
+    - the matrix's column 1 holding the new window after L5; a foreign byte there refused; kit v2's L5 and L6 writing nothing on a camera that still holds kit v1;
+    - variant B: apply / again / put back on NTSC and PAL; A's steps writing nothing on B and B's on A; both switch orders; a lost write undone;
     - a mixed NTSC/PAL camera refused, a foreign window refused;
     - lost writes undone, broken pointer chains refused;
     - every guard of L16 and S16, the encoder with and without the header heights, the playback step;
     - the FX3, FX2, A7C II and A7 IV kits' libraries writing nothing on an FX30.
 
-## Not known until an FX30 runs it
+## Not known until an FX30 runs v2
 
-- Whether the sensor and its link take the 3968-row window at the 4K line rate. No stock movie mode reads more than 3,348 rows; the stills modes read 4,128 at a slower line.
-- Whether the phase-detect row count (82) and the read-out field f2 (48) are what the sensor sends. The rules hold on every stock movie window but were derived, not traced to the sensor driver.
+- Whether the sensor and its link take 1,990 line pairs from row 94 in this mode. v1 never asked (its registers stayed stock). No stock movie mode reads more than 1,680; the stills modes read the full height at a slower line.
+- Whether the colour is right once the sensor and the picture side agree. The v1 fault is explained by the mismatch, but only a camera can confirm it.
+- Whether the phase-detect row count (82) and f2 (48) suit the sensor at this height. The rules hold on every stock window of the mode. What reads the stored record's LC and read-out fields (`+0x15a`, `+0x142`) was not traced to its code.
+- XAVC HS under the patch (one restart on a format change under v1).
 - The second scaler's result on the camera (its block address is predicted only; the dump searches for known sizes).
 - What `0x890` / `0x8d0` are used for (the same windows at line length 360: probably the high base ISO). Both are patched.
-- The power switch, the panel type, exposure and autofocus, rolling shutter and heat, HDMI, the playback step, 30p and PAL 24.00p (patched on the picture side, not on the encoder side: do not record them).
+- The power switch, exposure and autofocus, rolling shutter and heat, HDMI, the playback step, 30p and PAL 24.00p (patched on the picture side, not on the encoder side: do not record them).

@@ -7,7 +7,9 @@ helper_fx2/gen_fx2_write.py (the screen design's regions come from the screen bu
 writes FIVE stored drive-parameter records (modes 0x820, 0x880, 0x890, 0x8c0, 0x8d0, which share the picture-record pair), each in two timing
 variants (the camera computes them at start-up from its 60 Hz or 50 Hz table), so its header sets readcheck.c's MULTI_REC switch.
 This writes, into helper/:
-  expected_sites_ogsq_fx30_v1.h              levels 5/6: 8 table/record sites and the five stored records (MULTI_REC)
+  expected_sites_ogsq_fx30_v2.h              levels 5/6: 9 table/record sites (v2: with the sensor's window registers, the register
+                                             matrix's column 1) and the five stored records (MULTI_REC)
+  expected_sites_ogsq_fx30_v2b.h             levels 5/6 (B5/B6): variant B of the sensor design (two values differ; an A/B test)
   expected_words_outsz2560_fx30_v1.h         levels 16/17: the output-size word and its guards
   expected_words_lcd32dsq_fx30_v1.h          levels 16/17 (S16/S17): the rear screen at 3:2 and the de-squeeze words
   expected_mp_ogfile2560_hs_s_fx30_v2.h      levels 19/20: encoder side with the two MP4 header heights
@@ -46,7 +48,7 @@ def design(name):
     return d
 
 
-def sites_header(name="ogsq_fx30_v1"):
+def sites_header(name="ogsq_fx30_v2"):
     d = design(name)
     assert d["artifact_sha256"] == hashlib.sha256(IMAGE).hexdigest() and d["record_size"] == REC
     assert [int(m, 16) for m in d["modes"]] == list(MODES)
@@ -61,7 +63,12 @@ def sites_header(name="ogsq_fx30_v1"):
             out.append("static const u8 site%d_%s[%d] = { %s };" % (k, tag, len(data), hx(data)))
         rows.append("    { 0x%x, %d, site%d_old, site%d_new, 0, 0 }," % (a, len(old), k, k))
     assert all(a + len(o) <= b for (a, o, _), (b, _, _) in zip(sites, sites[1:])), "sites overlap"
-    assert len(sites) == 8
+    assert len(sites) == 9
+    # v2: one of them is the register matrix's rows of registers 6..25, where only the seven column-1 bytes change (the sensor's window)
+    sensor = d["summary"]["sensor"]
+    msite = next((a, o, n) for a, o, n in sites if int(sensor["matrix"], 16) <= a < int(sensor["matrix"], 16) + 20 * sensor["matrix_rows"])
+    changed = {msite[0] + k: (o, n) for k, (o, n) in enumerate(zip(msite[1], msite[2])) if o != n}
+    assert changed == {int(sensor["cells"][r], 16): tuple(v) for r, v in sensor["registers"].items()}, "the matrix site is not the seven window cells"
     # the five stored records: one list of offsets (the same in every mode and variant), per mode the NTSC and PAL bytes
     srs = d["stored_records"]
     offs = None
@@ -251,7 +258,8 @@ def ad_header(name="avdec8k_fx30_v1"):
 
 
 if __name__ == "__main__":
-    print("sites header ogsq_fx30_v1:", sites_header())
+    print("sites header ogsq_fx30_v2:", sites_header())
+    print("sites header ogsq_fx30_v2b:", sites_header("ogsq_fx30_v2b"))
     print("words header outsz2560_fx30_v1:", words_header("outsz2560_fx30_v1"))
     print("words header lcd32dsq_fx30_v1:", words_header("lcd32dsq_fx30_v1"))
     for n in ("ogfile2560_hs_s_fx30_v2", "ogfile2560_hs_s_fx30_v1"):

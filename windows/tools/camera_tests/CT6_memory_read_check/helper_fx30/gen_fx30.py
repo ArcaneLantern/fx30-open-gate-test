@@ -3,10 +3,13 @@
   C:\\Python313\\python.exe -B gen_fx30.py
 
 helper_fx2/gen_fx2.py with this build's files, designs and addresses (modding/FX30_PORT.md). Everything the helper compares against is taken
-here from the extracted 6.01 update and from modding/designs/{ogsq_fx30_v1, outsz2560_fx30_v1, ogfile2560_hs_s_fx30_v2, lcd32dsq_fx30_v1}.json
+here from the extracted 6.01 update and from modding/designs/{ogsq_fx30_v2, outsz2560_fx30_v1, ogfile2560_hs_s_fx30_v2, lcd32dsq_fx30_v1}.json
 (and avdec8k_fx30_v1 for the optional playback step, whose av-cam sites the check reports). The helper holds no other constant about the
 camera except the addresses listed at the top of this file.
-  - The sensor design's 8 table/record sites are hard sites (stock or target, counted).
+  - A site may carry a second target (TARGET-B): the sensor design's variant B, ogsq_fx30_v2b (the LC and read-out spans and the stored
+    records differ from ogsq_fx30_v2 in two values each; an A/B test).
+  - The sensor design's 9 table/record sites are hard sites (stock or target, counted). One of them, sensor_window, is the register
+    matrix's rows of the sensor's window registers (v2; fx30read_v1 did not look at them and design v1 did not write them).
   - The five stored drive-parameter records are soft sites: the camera computes them at start-up (NTSC or PAL table) and keeps run-time
     bytes in them, so they need not equal the emulated ones; the check prints their bytes and the PC reads the design offsets.
   - The output-size words are soft (zero until a movie mode has run), the screen words soft (the screen step is optional).
@@ -25,19 +28,23 @@ DES = ROOT / "modding/designs"
 sys.path.insert(0, str(ROOT / "build"))
 
 BASE = 0x108000
-LABEL = "fx30read_v1"
+LABEL = "fx30read_v2"
 CP_LO, CP_HI = 0xC0000, 0x2700000                     # coprocessor addresses a read may have: its logs, image and RAM tables
 AVCAM_PHYS, AVCAM_RESERVE = 0x401000000, "@0x401000000"   # kemco: memrsv=0x01000000@0x401000000:ex, as the FX3 (FX30_PORT_ENCODER.md)
 ID_FILES = {"/libmpr.so": "nflasha15/lib/libmpr.so", "/libsencore.so": "nflasha15/lib/libsencore.so", "/libJiritsu.so": "nflasha15/lib/libJiritsu.so"}
 # four 4 KB pages of coprocessor CODE that no design touches: a low code page, the record selector's (0x73ccde), the movie size table's
 # set-up (0x4644bc) and the drive-parameter table map (constructor caller 0x8e7826); each differs from every other kit's body
 ID_PAGES = (0x128000, 0x73C000, 0x464000, 0x8E7000)
-# The FX30 sensor's register matrix: 139 rows of 20 bytes (the register shadow's address, then one byte per column, 14 columns, 2 spare) and a
-# zero row, then the column map (31 words, one per drive mode). Shadow addresses 0x1123ee2..0x1124206.
-MATRIX, MATRIX_ROWS, MROW, COLMAP, IDS, NMODES = 0x1038E48, 139, 20, 0x1039938, 0xD10D68, 31
+# The FX30 sensor's register matrix: 154 rows of 20 bytes (the address of the register's value in the shadow, then one byte per column,
+# 14 columns, 2 spare) and a zero row, then the column map (31 words, one per drive mode). The firmware walks it from 0x1038d1c
+# (0x8e8218; build/emu_sensor_regs_fx30.py). fx30read_v1 had 0x1038e48 / 139 rows and so missed the first 15: the window registers.
+# The shadow is 4-byte entries {u16 register, u16 value} from 0x1123de4.
+MATRIX, MATRIX_ROWS, MROW, COLMAP, IDS, NMODES = 0x1038D1C, 154, 20, 0x1039938, 0xD10D68, 31
+SHADOW0 = 0x1123DE4
 RECS, REC = 0x20D93A4, 0x160
 SIZE_TABLE = 0x155D40C
-DESIGNS = ("ogsq_fx30_v1", "outsz2560_fx30_v1", "ogfile2560_hs_s_fx30_v2", "lcd32dsq_fx30_v1", "avdec8k_fx30_v1")
+DESIGNS = ("ogsq_fx30_v2", "outsz2560_fx30_v1", "ogfile2560_hs_s_fx30_v2", "lcd32dsq_fx30_v1", "avdec8k_fx30_v1")
+VARIANT_B = "ogsq_fx30_v2b"
 UNIT, DESC, DSIZE, CLIP, NDESC = 0x3926B8, 0x392758, 0x90, 0x39061C, 689    # build_ogfile.OTHER_BUILDS["fx30_601"] (FX30_PORT_ENCODER.md)
 # The pages the dump reads beyond the display pages (taken from the screen design's sites and guards below, one page each):
 DUMP_FIXED = (("shadow", 0x1123000, 2), ("matrix", 0x1038000, 2), ("sizetable", 0x155D000, 1), ("records", 0x20D9000, 3),
@@ -76,15 +83,20 @@ def main():
     out.append(f'#define FX30_LABEL "{LABEL}"\n#define CP_LO {CP_LO:#x}U\n#define CP_HI {CP_HI:#x}U\n#define AVCAM_PHYS {AVCAM_PHYS:#x}UL\n'
                f'#define AVCAM_RESERVE "{AVCAM_RESERVE}"')
     out.append("struct id_file { const char *name; unsigned char sha256[32]; };\nstruct id_page { unsigned int address; unsigned char sha256[32]; };\n"
-               "struct cp_site { const char *name; unsigned int address, length; const unsigned char *stock, *target; int soft; };\n"
+               "struct cp_site { const char *name; unsigned int address, length; const unsigned char *stock, *target; int soft; const unsigned char *alt; };\n"
                "struct mp_site { unsigned long offset; unsigned int length; const unsigned char *stock, *target; };\n"
                "struct av_guard { const char *name; unsigned long offset; unsigned int length; unsigned char sha256[32]; };\n"
                "struct dump_range { const char *name; unsigned int address, pages; };")
     rows = [f'    {{"{n}", {c_bytes(hashlib.sha256((EX / p).read_bytes()).digest())}}},' for n, p in ID_FILES.items()]
     out.append("static const struct id_file id_files[] = {\n" + "\n".join(rows) + "\n};")
     # ---- coprocessor sites
-    sites = []
-    names = {"crop": "crop", "stream-0": "window", "stream-1": "pdaf", "LC": "lc", "read-out": "readout", "geometry": "geometry"}
+    sites, alt = [], {}                                   # alt: site name -> variant B's bytes where they differ from the design's
+    ogb = design(VARIANT_B)
+    assert ogb["artifact_sha256"] == sha_cp and [p["addr"] for p in ogb["patches"]] == [p["addr"] for p in og["patches"]]
+    assert all(a["old"] == b["old"] for a, b in zip(og["patches"], ogb["patches"])) and ogb["summary"]["sensor"] == og["summary"]["sensor"]
+    newb = {p["addr"]: bytes.fromhex(p["new"]) for p in ogb["patches"]}
+    names = {"crop": "crop", "stream-0": "window", "stream-1": "pdaf", "LC": "lc", "read-out": "readout", "geometry": "geometry",
+             "register matrix": "sensor_window"}
     for p in og["patches"]:
         a, old, new = int(p["addr"], 16), bytes.fromhex(p["old"]), bytes.fromhex(p["new"])
         assert cp[a - BASE:a - BASE + len(old)] == old and len(old) == len(new)
@@ -93,10 +105,15 @@ def main():
         else:
             name = "record_left" if "left" in p["note"] else "record_right"
         sites.append((name, a, old, new, 0))
+        if newb[p["addr"]] != new:
+            alt[name] = newb[p["addr"]]
     ids = list(struct.unpack_from("<%dI" % NMODES, cp, IDS - BASE))
     for m, sr in og["stored_records"].items():            # soft: computed at start-up, run-time bytes; the PC reads the design offsets
         assert sr["index"] == ids.index(int(m, 16))
         sites.append((f"stored_record_{m}", RECS + sr["index"] * REC, bytes.fromhex(sr["ntsc"]["stock"]), bytes.fromhex(sr["ntsc"]["design"]), 1))
+        srb = ogb["stored_records"][m]
+        assert srb["index"] == sr["index"] and srb["offsets_that_differ"] == sr["offsets_that_differ"] and srb["ntsc"]["stock"] == sr["ntsc"]["stock"]
+        alt[f"stored_record_{m}"] = bytes.fromhex(srb["ntsc"]["design"])
     for s in oz["sites"]:                                 # soft: the size table is zero until a movie mode has run
         sites.append(("outsize", int(s["ram_address"], 16), bytes.fromhex(s["old"]), bytes.fromhex(s["new"]), 1))
     for k, g in enumerate(oz["guards"]):
@@ -113,7 +130,7 @@ def main():
     rows = []
     for name, a, old, new, soft in sites:
         assert CP_LO <= a and a + len(old) <= CP_HI and len(old) <= 3072
-        rows.append(f'    {{"{name}", {a:#x}, {len(old)}, {blob(old)}, {blob(new) if new is not None else "0"}, {soft}}},')
+        rows.append(f'    {{"{name}", {a:#x}, {len(old)}, {blob(old)}, {blob(new) if new is not None else "0"}, {soft}, {blob(alt[name]) if name in alt else "0"}}},')
     out.append("static const struct cp_site cp_sites[] = {\n" + "\n".join(rows) + "\n};")
     # ---- main-processor sites: the encoder side (hard), then the optional playback step's av-cam words (their own state, see below)
     lmr, avr, av_hi = [], [], 0
@@ -153,15 +170,19 @@ def main():
              "id_files": {n: hashlib.sha256((EX / p).read_bytes()).hexdigest() for n, p in ID_FILES.items()},
              "id_pages": {hex(a): hashlib.sha256(cp[a - BASE:a - BASE + 4096]).hexdigest() for a in ID_PAGES},
              "cp_sites": [{"name": n, "address": hex(a), "length": len(o), "soft": s} for n, a, o, _, s in sites],
+             "variant_b_sites": sorted(alt),
              "lm_sites": len(lmr), "av_sites": len(avr), "av_guards": [g[0] for g in guards], "dump_ranges": [[n, hex(a), k] for n, a, k in dump_ranges],
-             "designs": {d["design"]: hashlib.sha256((DES / (d["design"] + ".json")).read_bytes()).hexdigest() for d in (og, oz, fl, sc, ad)}}
+             "designs": {d["design"]: hashlib.sha256((DES / (d["design"] + ".json")).read_bytes()).hexdigest() for d in (og, ogb, oz, fl, sc, ad)}}
     (HERE / "fx30_expected.json").write_text(json.dumps(facts, indent=1) + "\n", encoding="utf8", newline="\n")
     # ---- what the PC needs to read a dump without the firmware files
     matrix = []
     for k in range(MATRIX_ROWS):
         a = struct.unpack_from("<I", cp, MATRIX - BASE + MROW * k)[0]
-        assert 0x1123000 <= a < 0x1125000
-        matrix.append([a, cp[MATRIX - BASE + MROW * k + 4:MATRIX - BASE + MROW * k + MROW].hex()])
+        assert 0x1123000 <= a < 0x1125000 and (a - SHADOW0) % 4 == 2
+        matrix.append([a, cp[MATRIX - BASE + MROW * k + 4:MATRIX - BASE + MROW * k + MROW].hex(), struct.unpack_from("<H", cp, a - 2 - BASE)[0]])
+    assert len({m[2] for m in matrix}) == MATRIX_ROWS and cp[MATRIX - 4 - BASE:MATRIX - BASE] == bytes(4)
+    sensor = og["summary"]["sensor"]
+    assert int(sensor["matrix"], 16) == MATRIX and sensor["matrix_rows"] == MATRIX_ROWS and int(sensor["shadow_base"], 16) == SHADOW0
     assert not any(cp[MATRIX - BASE + MROW * MATRIX_ROWS:MATRIX - BASE + MROW * (MATRIX_ROWS + 1)]) and MATRIX + MROW * (MATRIX_ROWS + 1) == COLMAP
     emu = json.loads((ROOT / "evidence/fx30/sensor/drvparam_stock_fx30_601.json").read_text(encoding="utf8"))["modes"]
     ref = {"about": "FX30 6.01 reference data for reading an fx30read dump; from cpapp-b.bin and build/emu_drvparam.py fx30_601", "matrix_address": hex(MATRIX),
@@ -169,6 +190,14 @@ def main():
            "mode_ids": [hex(x) for x in ids], "records_address": hex(RECS), "record_size": REC,
            "emulated_stock_records": {m: v["record"] for m, v in emu.items()}, "size_table_address": hex(SIZE_TABLE),
            "stored_records_design": og["stored_records"], "open_gate_column": 1,
+           # variant B of the sensor design (ogsq_fx30_v2b): the same sites; two values differ (first phase-detect row, read-out length)
+           "stored_records_design_b": ogb["stored_records"],
+           "variant_b": {"design": ogb["design"], "first_pdaf_row": [og["summary"]["pdaf"]["first_pdaf_row"], ogb["summary"]["pdaf"]["first_pdaf_row"]],
+                         "readout_length": [og["summary"]["pdaf"]["readout_length"], ogb["summary"]["pdaf"]["readout_length"]]},
+           # the sensor's own window: registers 6/7 = window row + row_bias, 8/9 = (rows + margins) / 2 line pairs, 14 = first phase-detect
+           # block, 16 = phase-detect rows / 2, 25 = read-out f2; [stock, design] per register; cells = the matrix bytes of column 1
+           "sensor_window": {"registers": sensor["registers"], "row_bias": sensor["row_bias"], "margins": sensor["margins"],
+                             "cells": sensor["cells"], "column": sensor["column"], "sensor_design": og["design"]},
            "window": {"stock_row": 406, "stock_height": 3348, "design_row": og["summary"]["window_row"], "design_height": og["summary"]["window"][1],
                       "record_offsets": {"height": "0x66", "pdaf_rows": "0x8c", "row": "0xf6", "row_copy": "0x102", "first_block": "0x10e",
                                          "readout_length": "0x142", "first_pdaf_row": "0x15a", "sampling_ratio": "0x6"}},
@@ -176,7 +205,7 @@ def main():
            "screen_design": sc["design"],
            "panel_type": {"rear": "0x16295d4", "second": "0x1629704", "codes": {"1": "16:9", "2": "4:3", "3": "3:2"}},
            "ram": {"resize_result_predicted": "0x1571ec4 (A7 IV 0x145091c, not confirmed: the dump decoder searches 0x1571000.. for known sizes)",
-                   "resize_settings": "0x1573a30", "resize_work": "0x12ddef8", "shadow_first": "0x1123ee2"}}
+                   "resize_settings": "0x1573a30", "resize_work": "0x12ddef8", "shadow_base": hex(SHADOW0)}}
     assert len(ref["emulated_stock_records"]) == NMODES
     (HERE / "fx30_reference.json").write_text(json.dumps(ref) + "\n", encoding="utf8", newline="\n")
     print(f"fx30_expected.h: {len(sites)} coprocessor sites ({len(sc['sites'])} of the screen, 5 stored records), "

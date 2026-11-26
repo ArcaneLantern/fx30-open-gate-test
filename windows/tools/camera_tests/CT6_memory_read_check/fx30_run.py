@@ -9,13 +9,18 @@
   check   identity of the camera's software and what every site of the open-gate designs holds now: READY / NOT READY
           (the screen step's 30 words and the five stored records are reported as well, not counted)
   dump    the same, plus kernel and memory facts, the coprocessor's logs and some of its tables (sensor registers, stored
-          records with the window they program, the resize module, the display: panel type, 3:2 ratio, frame tables, de-squeeze ratios)
+          records with the window they program, the window the SENSOR is programmed for and whether the two agree, the resize module,
+          the display: panel type, 3:2 ratio, frame tables, de-squeeze ratios)
 
 Both read-only libraries only read. Each creates one file, its result, on the camera's RAM disk; this script fetches it. The
 library is written to the camera's service partition, loaded once, and deleted again in the same session.
 
 The FX30 counterpart of fx3_run.py (FX30 port, 2026-11-26): this camera's libraries, pins and result reader. The FX30's main-processor
 software is the FX3's moved; its image processor's sensor tables have the A7 IV's layout (modding/FX30_PORT.md).
+
+Kit v2 (2026-11-26, after the first camera runs): the sensor design is ogsq_fx30_v2, which also writes the sensor's own window registers (the
+register matrix's column 1). v1 left them stock, so the sensor sent 3348 rows while the tables said 3968: picture in the top 2160 of 2560 rows,
+black below, blue cast (three cameras). The dump now reads the sensor's registers and says so when they and the stored record disagree.
 """
 import argparse
 import json
@@ -36,16 +41,23 @@ import ct6_level1_run as R  # noqa: E402
 
 FIRMWARE, MODEL, BUILD = "6.01", "ILME-FX30", "fx30_601"
 S3 = HERE / "helper_fx30"                      # this kit's folder (the name S3 is kept from s3_run.py)
-PINS = {"check": ("libJit_fx30_check.so", "a7d488117048de5070d8f291fa87750a2f576ad659e90d401e8cb95b96a6260a"),      # fx30read_v1 (2026-11-26)
-        "dump": ("libJit_fx30_dump.so", "ff2c52a88b26305b1deb42c792c29f71b3d9af5b942edefe817d285d6a61774e")}
+PINS = {"check": ("libJit_fx30_check.so", "6ebb1d807abee22521a20e9f199f61cfe90eca84cf7592cbcb462ee2c20b2582"),      # fx30read_v2 (2026-11-26)
+        "dump": ("libJit_fx30_dump.so", "94ae0c8b3ca3d6ac5897e8e88fd6d4eecd4cf323fac88e16f9c64f512e470c0a")}
 LEVELS = {"check": 101, "dump": 102}              # numbers outside the A7 IV runner's own levels: none of its level-specific code runs
 # THE WRITE STEPS. Each is one library built from the A7 IV helper's write code with this camera's tables (helper_fx30/build_fx30_write.sh).
 # They change the running camera's memory until a cold boot. They are run through fx30_apply.py, never by a launcher of the read-only kit.
 WRITE_STEPS = {
-    "L5": ("libJit_fx30_L5.so", "047b4401842b8066cb49f3821a70d05ffc03e24bfac96e4575a80570bac9cbad",
-           "apply the sensor-side design ogsq_fx30_v1 (the 4K window 5952x3968 from row 96 in modes 0x820/0x880/0x890/0x8c0/0x8d0: 6 table spans, "
-           "the two picture records and the five stored records, NTSC or PAL as the camera holds them)"),
-    "L6": ("libJit_fx30_L6.so", "7fa24bf0656168b143e0d60586b1ece69c41cf1574c94735fe543d3fcb0f086e", "put back the sensor-side design ogsq_fx30_v1"),
+    "L5": ("libJit_fx30_L5.so", "dc077b471d6b2949b84bad495f28f4e44241a1704ac1726f60f4a05b09657e1a",
+           "apply the sensor-side design ogsq_fx30_v2 (the 4K window 5952x3968 from row 94 in modes 0x820/0x880/0x890/0x8c0/0x8d0: the sensor's "
+           "seven window registers in the register matrix, 6 table spans, the two picture records and the five stored records, NTSC or PAL as "
+           "the camera holds them)"),
+    "L6": ("libJit_fx30_L6.so", "2cf0e6c9a8a1cfc5bd530a6f20391cb82d4018e4ece86d4d71435f2bf604e9dd", "put back the sensor-side design ogsq_fx30_v2"),
+    # Variant B of the sensor step, for an A/B test: ogsq_fx30_v2b = v2 with the two values a tester reported clean colour with (repo issue 1):
+    # first phase-detect row = window row + 51 = 145 (v2: 121, on the phase-detect blocks' 48-row grid) and read-out length 2020 (v2: 2014).
+    # Same sensor registers, same picture records. B5 instead of L5; B6 puts it back.
+    "B5": ("libJit_fx30_B5.so", "a4879a2b8735b39836fb19b32ccc96d4c37561f957417f02a37f158f467c30a3",
+           "apply the sensor-side design, VARIANT B (ogsq_fx30_v2b: as ogsq_fx30_v2, but first phase-detect row 145 and read-out length 2020)"),
+    "B6": ("libJit_fx30_B6.so", "17d6a817fd99ebffd808bc1f91114e502f7f24605f6614d93e19244a6270daac", "put back the sensor-side design, variant B (ogsq_fx30_v2b)"),
     "L16": ("libJit_fx30_L16.so", "001deba3f0acd3bbb1c82576d97a984fb92f5c402e2663af08c42849cdae73d2", "apply the output size outsz2560_fx30_v1 (one word)"),
     "L17": ("libJit_fx30_L17.so", "837f42a801a44280cdc22db1654eb084584cdf2888830ca98c9e723a8d9c517a", "put back the output size outsz2560_fx30_v1"),
     # L19: the FX3 kit's encoder side with the MP4 header heights (ogfile2560_hs_s_fx30_v2: tkhd, stsd and Sony's PROF say 3840x2560). L20 puts
@@ -62,9 +74,36 @@ WRITE_STEPS = {
     "P30": ("libJit_fx30_P30.so", "811589289151f5c0a816bb10144b55aebd6416e3c7dd428e79eaad95817f0d31", "put back the playback decoder avdec8k_fx30_v1"),
 }
 PINS.update({k: v[:2] for k, v in WRITE_STEPS.items()})
-LEVELS.update({k: {"L": 200, "S": 300, "N": 500, "P": 600}[k[0]] + int(k[1:]) for k in WRITE_STEPS})
+LEVELS.update({k: {"L": 200, "S": 300, "N": 500, "P": 600, "B": 700}[k[0]] + int(k[1:]) for k in WRITE_STEPS})
 WHICH = "check"
 DESIGN_MODES = ("0x820", "0x880", "0x890", "0x8c0", "0x8d0")
+# Libraries this kit published before and no longer runs (kit v1, 2026-11-26). With PINS they are the files a run may delete from the camera's
+# service partition when an earlier session left one behind (R.KNOWN_LIBS, as in fx3_run.py: a cut-off session leaves its library on that
+# partition, which is flash and survives a cold boot, and every later run then stopped at "a file is already there").
+EARLIER_LIBS = {
+    "047b4401842b8066cb49f3821a70d05ffc03e24bfac96e4575a80570bac9cbad": "kit v1's L5 (ogsq_fx30_v1)",
+    "7fa24bf0656168b143e0d60586b1ece69c41cf1574c94735fe543d3fcb0f086e": "kit v1's L6 (put back of ogsq_fx30_v1)",
+    "a7d488117048de5070d8f291fa87750a2f576ad659e90d401e8cb95b96a6260a": "kit v1's read-only check (fx30read_v1)",
+    "ff2c52a88b26305b1deb42c792c29f71b3d9af5b942edefe817d285d6a61774e": "kit v1's read-only dump (fx30read_v1)",
+}
+EXTRA_LIBS = {}                                   # --remove-library: one more file, named by its SHA-256 on the command line
+
+
+def known_libs():
+    out = {sha: "this kit's %s library (%s)" % ("read-only " + k if k in ("check", "dump") else "step " + k, name) for k, (name, sha) in PINS.items()}
+    out.update(EARLIER_LIBS)
+    out.update(EXTRA_LIBS)
+    return out
+# Lines the helpers print with "!!" that are not faults (first camera runs, 2026-11-25/26): a /proc file longer than the helper's copy limit,
+# and the entries of /proc/driver/pcie that are directories (read() gives -21, EISDIR). They are kept in the report as notes.
+HARMLESS = (re.compile(r"^!! truncated at \d+ bytes$"), re.compile(r"^!! read failed -21$"))
+
+
+def split_problems(lines):
+    """(problem lines, harmless notes) among the lines that start with "!!"."""
+    marked = [ln for ln in lines if ln.startswith("!!")]
+    notes = [ln for ln in marked if any(h.match(ln.strip()) for h in HARMLESS)]
+    return [ln for ln in marked if ln not in notes], notes
 
 
 def write_result(data):
@@ -75,14 +114,14 @@ def write_result(data):
     pick = lambda start: next((ln for ln in lines if ln.startswith(start)), None)
     outcome = ("UNDO INCOMPLETE" if pick("!! UNDO INCOMPLETE") or pick("UNDO INCOMPLETE") else "DONE" if pick("DONE: ") else "NOTHING TO DO" if pick("NOTHING TO DO") else
                "NOT DONE (everything put back)" if pick("NOT DONE: ") else "NOTHING WRITTEN" if any("nothing is written" in ln for ln in lines) else "UNKNOWN")
-    problems = [ln for ln in lines if ln.startswith("!!")]
+    problems, notes = split_problems(lines)
     variant = pick("the stored records are the ")
     return {"bytes": len(data), "sha256": hashlib.sha256(data).hexdigest(), "header_ok": lines[0].startswith("readcheck 1 level %s" % WHICH[1:]),
             "euid": "see the result", "sections": [ln for ln in lines if ln.startswith("== ")], "problems": len(problems),
             "complete": any(ln.startswith("== done") for ln in lines[-3:]),
             "s3": {"step": WHICH, "what": WRITE_STEPS[WHICH][2], "outcome": outcome, "ok": outcome in ("DONE", "NOTHING TO DO"),
                    "outcome_line": pick("DONE: ") or pick("NOTHING TO DO") or pick("NOT DONE: ") or pick("!! UNDO INCOMPLETE") or pick("UNDO INCOMPLETE"),
-                   "timing_variant": variant, "problem_lines": problems}}
+                   "timing_variant": variant, "problem_lines": problems, "notes": notes}}
 
 
 def reference():
@@ -111,7 +150,7 @@ def check_result(data):
             pages[int(addr, 16)] = (name, bytes.fromhex(hx.strip()))
     sites, other = [], {}
     for ln in lines:
-        m = re.match(r"site (\S+) (0x[0-9a-f]+) len (\d+)(?: bytes (?:differing from stock )?(\S+))?  (STOCK|TARGET|OTHER.*|NOT READ)$", ln)
+        m = re.match(r"site (\S+) (0x[0-9a-f]+) len (\d+)(?: bytes (?:differing from stock )?(\S+))?  (STOCK|TARGET-B|TARGET|OTHER.*|NOT READ)$", ln)
         if m:
             sites.append({"name": m.group(1), "address": m.group(2), "length": int(m.group(3)), "shown": m.group(4), "state": m.group(5)})
         m = re.match(r"other (\S+) ([0-9a-f]+)$", ln)
@@ -121,14 +160,22 @@ def check_result(data):
           "identity_same": count(r"SAME as the 6\.01 update$"), "identity_differs": count(r"DIFFERS from the 6\.01 update$"),
           "coprocessor_sites": sites, "libmpr_sites": [ln for ln in lines if ln.startswith("lm ")],
           "avcam_stock": count(r"^av .*  STOCK$"), "avcam_target": count(r"^av .*  TARGET$"), "avcam_other": count(r"^av .*  OTHER$"),
-          "avcam_guards": [ln for ln in lines if ln.startswith("guard ")], "problem_lines": [ln for ln in lines if ln.startswith("!!")],
-          "pages": len(pages)}
+          "avcam_guards": [ln for ln in lines if ln.startswith("guard ")], "pages": len(pages)}
+    s3["problem_lines"], s3["notes"] = split_problems(lines)
     s3["stored_records"] = stored_record_states(sites, other)
+    # which variant of the sensor design the two table spans that differ (LC, read-out) hold
+    two = [s["state"] for s in sites if s["name"] in expected().get("variant_b_sites", []) and not s["name"].startswith("stored_record_")]
+    s3["sensor_variant"] = (None if not two else "stock" if set(two) == {"STOCK"} else "A (ogsq_fx30_v2)" if set(two) == {"TARGET"} else
+                            "B (ogsq_fx30_v2b)" if set(two) == {"TARGET-B"} else "mixed or unknown: %s" % two)
     cmd = re.search(r"== file /proc/cmdline\n(.*?)\n== end", text, re.S)
     ver = re.search(r"== file /proc/version\n(.*?)\n== end", text, re.S)
     s3["kernel_command_line"], s3["kernel_version"] = (cmd.group(1).strip() if cmd else None), (ver.group(1).strip() if ver else None)
     if pages:
         s3["decoded"] = decode_pages(pages)
+        sv = s3["decoded"].get("sensor_vs_record", {})
+        if sv.get("agree") is False:                 # found by the PC, not printed by the helper: the fault of kit v1
+            s3["problem_lines"].append("!! (found by this script) the sensor is programmed for %d rows from row %d, the stored records say %d rows from row %d: "
+                                       "the picture will not fill the frame" % (sv["sensor"][0], sv["sensor"][1], sv["record"][0], sv["record"][1]))
     import hashlib
     return {"bytes": len(data), "sha256": hashlib.sha256(data).hexdigest(), "header_ok": head.startswith("fx30read ") and "ILME-FX30 6.01" in head, "euid": "not read",
             "sections": [ln for ln in lines if ln.startswith("== ")], "problems": len(s3["problem_lines"]), "complete": "== done" in lines[-3:],
@@ -137,13 +184,17 @@ def check_result(data):
 
 def record_state(mode, rec):
     """What one stored record holds at the design's offsets: stock or applied, and in which timing variant (NTSC 60 Hz / PAL 50 Hz)."""
-    sr = reference()["stored_records_design"][mode]
-    offs = [int(x, 16) for x in sr["offsets_that_differ"]]
-    got = bytes(rec[k] for k in offs)
-    for v in ("ntsc", "pal"):
-        for what, key in (("stock", "stock"), ("applied", "design")):
-            if got == bytes(bytes.fromhex(sr[v][key])[k] for k in offs):
-                return f"{what} ({v.upper()})"
+    ref = reference()
+    for label, designs in (("", ref["stored_records_design"]), (", variant B", ref.get("stored_records_design_b"))):
+        if not designs:
+            continue
+        sr = designs[mode]
+        offs = [int(x, 16) for x in sr["offsets_that_differ"]]
+        got = bytes(rec[k] for k in offs)
+        for v in ("ntsc", "pal"):
+            for what, key in (("stock", "stock"), ("applied" + label, "design")):
+                if got == bytes(bytes.fromhex(sr[v][key])[k] for k in offs):
+                    return f"{what} ({v.upper()})"
     return "other"
 
 
@@ -153,8 +204,8 @@ def stored_record_states(sites, other):
         if not s["name"].startswith("stored_record_"):
             continue
         mode = s["name"][len("stored_record_"):]
-        if s["state"] in ("STOCK", "TARGET"):
-            out[mode] = "stock (NTSC)" if s["state"] == "STOCK" else "applied (NTSC)"
+        if s["state"] in ("STOCK", "TARGET", "TARGET-B"):
+            out[mode] = {"STOCK": "stock (NTSC)", "TARGET": "applied (NTSC)", "TARGET-B": "applied, variant B (NTSC)"}[s["state"]]
         elif s["name"] in other:
             out[mode] = record_state(mode, other[s["name"]])
         else:
@@ -177,23 +228,44 @@ def decode_pages(pages):
             addr, n = addr + take, n - take
         return bytes(b)
 
-    # the sensor register shadow against each column of the register matrix (14 columns; 1, 2, 8 and 9 are byte-identical: the 4K window is
-    # not in the matrix on the FX30, so the open gate keeps column 1 and the shadow cannot tell the window)
-    rows = [(a, bytes.fromhex(h)) for a, h in ref["matrix"]]
+    # The register matrix (154 rows: the address of a register's value in the shadow, 14 column bytes) and the sensor register shadow. The
+    # camera's own matrix is used where the dump holds it (the open gate changes seven bytes of column 1), else the file's. Columns 1, 2, 8
+    # and 9 (the four 6K-class windows) differ only in the window registers 6/7, 8/9, 14, 16 and 25.
+    rows = [(m[0], bytes.fromhex(m[1])) for m in ref["matrix"]]
+    regs = {m[2]: m[0] for m in ref["matrix"]}             # register number -> address of its value in the shadow
     ncol = ref["matrix_columns"]
+    sw = ref["sensor_window"]
+    m0, rb = int(ref["matrix_address"], 16), ref["matrix_row_bytes"]
+    got = mem(m0, rb * len(rows))
+    live = rows
+    if got is not None:
+        want = b"".join(struct.pack("<I", a) + cols for a, cols in rows)
+        diff = {m0 + o: (want[o], got[o]) for o in range(len(want)) if want[o] != got[o]}
+        cells = {int(a, 16): tuple(sw["registers"][r]) for r, a in sw["cells"].items()}
+        out["matrix_equals_file"] = not diff
+        out["matrix_state"] = ("as the firmware file" if not diff else
+                               "the firmware file's with the open gate's seven sensor-window bytes (%s)" % sw["sensor_design"] if diff == cells else
+                               "%d bytes differ from the firmware file and from the open gate" % len(diff))
+        out["matrix_bytes_differing_from_file"] = [[hex(a), w, g] for a, (w, g) in sorted(diff.items())][:64]
+        if all(got[rb * i:rb * i + 4] == struct.pack("<I", a) for i, (a, _) in enumerate(rows)):
+            live = [(a, got[rb * i + 4:rb * i + rb]) for i, (a, _) in enumerate(rows)]
     shadow = [(a, mem(a, 1)) for a, _ in rows]
+    best = None
     if all(v is not None for _, v in shadow):
-        score = [sum(1 for (a, cols), (_, v) in zip(rows, shadow) if cols[k] == v[0]) for k in range(ncol)]
+        score = [sum(1 for (a, cols), (_, v) in zip(live, shadow) if cols[k] == v[0]) for k in range(ncol)]
         best = max(range(ncol), key=lambda k: score[k])
         users = [ref["mode_ids"][i] for i, col in enumerate(ref["column_map"]) if col == best]
         out["sensor_registers"] = {"rows": len(rows), "rows_equal_per_column": score, "closest_column": best, "modes_using_it": users,
                                    "columns_with_the_same_score": [k for k in range(ncol) if score[k] == score[best]],
-                                   "rows_differing_from_it": [[i, hex(a), cols[best], v[0]] for i, ((a, cols), (_, v)) in enumerate(zip(rows, shadow)) if cols[best] != v[0]][:64]}
-    m0 = int(ref["matrix_address"], 16)
-    got = mem(m0, ref["matrix_row_bytes"] * len(rows)) if (m0 & ~0xFFF) in pages else None
-    if got is not None:
-        want = b"".join(struct.pack("<I", a) + cols for a, cols in rows)
-        out["matrix_equals_file"] = got == want
+                                   "rows_differing_from_it": [[i, hex(a), cols[best], v[0]] for i, ((a, cols), (_, v)) in enumerate(zip(live, shadow)) if cols[best] != v[0]][:64]}
+        # the window the sensor is programmed for (what the camera last sent it)
+        v = {r: mem(regs[r], 1)[0] for r in (1, 6, 7, 8, 9, 14, 16, 25)}
+        start, pairs = v[6] | v[7] << 8, v[8] | v[9] << 8
+        seven = {r: v[int(r)] for r in sw["registers"]}
+        out["sensor_window"] = {"mode_register": v[1], "start_register": start, "line_pairs": pairs, "window_row": start - sw["row_bias"],
+                                "rows": 2 * pairs - sw["margins"], "first_phase_detect_block": v[14], "phase_detect_rows": 2 * v[16], "readout_f2": v[25],
+                                "state": ("stock 4K window" if all(seven[r] == sw["registers"][r][0] for r in seven) else
+                                          "open gate window" if all(seven[r] == sw["registers"][r][1] for r in seven) else "another mode or window")}
     # the stored drive-parameter records against the emulated ones, and the window the five design modes' records program
     r0, size = int(ref["records_address"], 16), ref["record_size"]
     recs, window = {}, {}
@@ -208,9 +280,21 @@ def decode_pages(pages):
         if mid in DESIGN_MODES:
             u = lambda k: struct.unpack_from("<H", b, wo[k])[0]
             window[mid] = {"state": record_state(mid, b), "window": [u("height"), u("row")], "pdaf_rows": u("pdaf_rows"), "first_pdaf_row": u("first_pdaf_row"),
+                           "first_pdaf_block": u("first_block"),
                            "readout_line_periods": u("readout_length"), "sampling_ratio": [b[4], b[5], b[6], b[7]]}
     out["stored_records"] = recs
     out["design_mode_windows"] = window
+    # Do the sensor and the stored records agree? Only where the sensor runs a mode of the open gate's column (a 4K movie mode).
+    if "sensor_window" in out and len(window) == len(DESIGN_MODES):
+        sn = out["sensor_window"]
+        rec = {(w["window"][0], w["window"][1], w["pdaf_rows"], w["first_pdaf_block"]) for w in window.values()}
+        if best != sw["column"]:
+            out["sensor_vs_record"] = {"agree": None, "why": "the sensor is not in a 4K movie mode (its registers are closest to matrix column %d)" % best}
+        elif len(rec) != 1:
+            out["sensor_vs_record"] = {"agree": None, "why": "the five stored records differ from one another"}
+        else:
+            r, se = list(rec.pop()), [sn["rows"], sn["window_row"], sn["phase_detect_rows"], sn["first_phase_detect_block"]]
+            out["sensor_vs_record"] = {"agree": r == se, "sensor": se, "record": r, "order": "rows, first row, phase-detect rows, first phase-detect block"}
     t = mem(int(ref["size_table_address"], 16), 128)
     if t is not None:
         out["size_table"] = [list(struct.unpack_from("<HHI", t, 8 * k)) for k in range(16)]
@@ -308,7 +392,7 @@ def run_helper(data):
     try:
         import emu_fx30
     except Exception:
-        text = "fx30read fx30read_v1 %s for ILME-FX30 6.01; read-only\n== file /proc/version\nLinux (simulated)\n\n== end 18 bytes\n== summary\nVERDICT READY (canned)\n== done\n" % WHICH
+        text = "fx30read fx30read_v2 %s for ILME-FX30 6.01; read-only\n== file /proc/version\nLinux (simulated)\n\n== end 18 bytes\n== summary\nVERDICT READY (canned)\n== done\n" % WHICH
         return text.encode(), "canned"
     r, text = emu_fx30.run(bytes(data))
     if r.bad:
@@ -332,6 +416,7 @@ def use(which):
         raise SystemExit("%s is not in this kit%s. Nothing was sent." % (name, " (the write steps are not published yet)" if which in WRITE_STEPS else ""))
     R.LEVEL, R.DESIGN, R.LIB, R.LIB_SHA256 = LEVELS[which], "og4k_data_v1", S3 / name, sha
     R.check_result, R.known_answer, R.run_helper, R.make_sim = check_result, known_answer, run_helper, make_sim
+    R.KNOWN_LIBS = known_libs()
     c.EXPECTED_FIRMWARE = FIRMWARE
     return R.library()
 
@@ -365,6 +450,9 @@ def selftest(lib):
         if WHICH == "dump":
             d = f.get("decoded", {})
             check(d.get("matrix_equals_file") and len(d.get("stored_records", {})) == 31 and d.get("size_table"), "dump: the pages decode (matrix, 31 records, size table)")
+            check(d.get("sensor_registers", {}).get("rows") == 154 and d.get("matrix_state") == "as the firmware file" and "sensor_window" in d
+                  and d.get("sensor_vs_record", {}).get("agree") is None and not f["problem_lines"],
+                  "dump: the 154 matrix rows and the sensor's window registers are read; a camera that is not in a 4K movie mode gives no verdict on them")
             check(all(v["window"] == [3348, 406] and v["state"] == "stock (NTSC)" for v in d.get("design_mode_windows", {}).values())
                   and len(d.get("design_mode_windows", {})) == 5, "dump: the five design modes' records program the stock 5952x3348 window from row 406")
             dp = d.get("display", {})
@@ -383,7 +471,39 @@ def selftest(lib):
     check(stopped and len(R.sent(s)) == 2, "another DeviceInfo.xml: stops after the known-answer read")
     s, sim, stopped = R.simulate(lib, R.body_run, fault="load")
     check(stopped and R.sent(s).count(D) == 1 and R.LIB_PATH.decode() not in sim.fs, "a camera that cannot load the library: it is still deleted")
+    # a library an earlier session left on the service partition (it survives a cold boot): one of this kit's is deleted and the run goes on
+    lp = R.LIB_PATH.decode()
+    other = next((S3 / n).read_bytes() for k, (n, sha) in sorted(PINS.items()) if k != WHICH and (S3 / n).is_file())
+    for left, what in ((other, "another step's library"), (lib, "this step's own library")):
+        s, sim, stopped = R.simulate(lib, R.body_run, files={lp: left})
+        names, lr = R.sent(s), s.results["ct6"].get("leftover_removed") or {}
+        check(not stopped and not sim.unexpected and names.count(D) == 2 and names.count(W) == 1 and names.index(D) < names.index(W) and lp not in sim.fs
+              and sim.loads == 1 and lr.get("gone") and lr.get("sha256") == c.sha256(left) and s.results["ct6"]["library_on_camera_after"] is False,
+              "%s left on the camera: deleted first, then the normal run (one write, loaded once, gone afterwards)" % what)
+    s, sim, stopped = R.simulate(lib, R.body_run, files={lp: other}, fault="sticky")
+    check(stopped and W not in R.sent(s) and R.sent(s).count(D) == 1 and sim.fs.get(lp) == other, "a left library the camera will not delete: stops, nothing written")
+    named = b"a file named with --remove-library"
+    saved = dict(R.KNOWN_LIBS)
+    try:
+        R.KNOWN_LIBS[c.sha256(named)] = "the file named with --remove-library"
+        s, sim, stopped = R.simulate(lib, R.body_run, files={lp: named})
+        check(not stopped and R.sent(s).count(D) == 2 and R.sent(s).count(W) == 1 and lp not in sim.fs, "--remove-library with the file's SHA-256: deleted, then the normal run")
+        s, sim, stopped = R.simulate(lib, R.body_run, files={lp: named + b"!"})
+        check(stopped and W not in R.sent(s) and D not in R.sent(s) and c.sha256(named + b"!") in stopped, "--remove-library with another SHA-256: stops, nothing deleted, the file's SHA-256 is shown")
+    finally:
+        R.KNOWN_LIBS.clear()
+        R.KNOWN_LIBS.update(saved)
+    s, sim, stopped = R.simulate(lib, R.body_remove_only, files={lp: other})
+    check(not stopped and R.sent(s).count(D) == 1 and W not in R.sent(s) and lp not in sim.fs and s.results["ct6"]["library_on_camera_after"] is False,
+          "--remove-only: deletes another step's library of this kit too, writes nothing")
+    s, sim, stopped = R.simulate(lib, R.body_remove_only, files={lp: b"someone else's"})
+    check(stopped and D not in R.sent(s) and lp in sim.fs, "--remove-only: leaves a file that is none of this kit's")
+    check(set(EARLIER_LIBS) <= set(R.KNOWN_LIBS) and all(sha in R.KNOWN_LIBS for _, sha in PINS.values()) and not set(EARLIER_LIBS) & {sha for _, sha in PINS.values()},
+          "every library of this kit, current (%d) and of kit v1 (%d), is one a run may delete" % (len(PINS), len(EARLIER_LIBS)))
     check(len(R.refusals(lib)) == 15, "the guard refuses the 15 listed packets (changed library, other paths, backup, flash and debug writes ...)")
+    check(split_problems(["!! truncated at 2048 bytes", "!! read failed -21", "!! read failed; nothing is written", "!! read failed -5", "ok"])
+          == (["!! read failed; nothing is written", "!! read failed -5"], ["!! truncated at 2048 bytes", "!! read failed -21"]),
+          "a long /proc file and the /proc/driver/pcie directories are notes; every other marked line stays a problem")
     return done
 
 
@@ -394,6 +514,8 @@ def report(session, facts, which):
         if f.get("timing_variant"):
             lines.append(f["timing_variant"])
         lines += ["  " + ln for ln in f["problem_lines"]]
+        if f.get("notes"):
+            lines.append("notes (not faults: %d lines such as a directory under /proc/driver/pcie that cannot be read as a file)" % len(f["notes"]))
         session.save_bytes("fx30_report.txt", ("\n".join(lines) + "\n").encode())
         for ln in lines:
             session.say(ln)
@@ -404,16 +526,26 @@ def report(session, facts, which):
     for s in f["coprocessor_sites"]:
         lines.append("  coprocessor %-22s %s len %-4d %s%s" % (s["name"], s["address"], s["length"], s["state"], "" if s["shown"] is None else "  (" + s["shown"] + ")"))
     lines.append("stored records of the five open-gate modes: " + ", ".join("%s %s" % kv for kv in f.get("stored_records", {}).items()))
+    if f.get("sensor_variant"):
+        lines.append("sensor design in memory: %s" % f["sensor_variant"])
     lines += ["  " + ln for ln in f["libmpr_sites"]] + ["  " + ln for ln in f["avcam_guards"]]
     lines.append("  av-cam.bin sites: %d stock, %d target, %d other" % (f["avcam_stock"], f["avcam_target"], f["avcam_other"]))
     lines += ["problem lines:"] + ["  " + ln for ln in f["problem_lines"]] if f["problem_lines"] else ["no problem lines"]
+    if f.get("notes"):
+        lines.append("notes (not faults): " + "; ".join("%d x %s" % (f["notes"].count(n), n.strip()) for n in sorted(set(f["notes"]))))
     d = f.get("decoded")
     if d:
         sr = d.get("sensor_registers")
         if sr:
             lines.append("sensor register shadow: closest matrix column %d (%d of %d rows equal; columns with the same score %s; modes %s)"
                          % (sr["closest_column"], sr["rows_equal_per_column"][sr["closest_column"]], sr["rows"], sr["columns_with_the_same_score"], ", ".join(sr["modes_using_it"])))
-        lines.append("register matrix equals the file: %s" % d.get("matrix_equals_file"))
+        lines.append("register matrix: %s" % d.get("matrix_state"))
+        sn, sv = d.get("sensor_window"), d.get("sensor_vs_record", {})
+        if sn:
+            lines.append("SENSOR is programmed for: %d rows from row %d (%s), %d phase-detect rows from block %d, lead-in %d, sensor mode %d"
+                         % (sn["rows"], sn["window_row"], sn["state"], sn["phase_detect_rows"], sn["first_phase_detect_block"], sn["readout_f2"], sn["mode_register"]))
+            lines.append("  sensor and stored records: " + ("AGREE" if sv.get("agree") else "DO NOT AGREE (sensor %s, records %s: %s)" % (sv["sensor"], sv["record"], sv["order"])
+                                                            if sv.get("agree") is False else "not compared: %s" % sv.get("why", "the records were not read")))
         zero = [m for m, v in d.get("stored_records", {}).items() if v["all_zero"]]
         same = [m for m, v in d.get("stored_records", {}).items() if not v["bytes_differing_from_emulation"]]
         lines.append("stored drive-parameter records: %d read, %d equal to the emulated ones, %d all zero" % (len(d.get("stored_records", {})), len(same), len(zero)))
@@ -475,11 +607,17 @@ def main():
     ap.add_argument("--go", action="store_true")
     ap.add_argument("--remove-only", action="store_true")
     ap.add_argument("--clear-result", metavar="SHA256", help="first delete the result file of an earlier run from the RAM disk, only if its SHA-256 is this")
+    ap.add_argument("--remove-library", metavar="SHA256", help="a libJit.so left on the camera's service partition that is none of this kit's: delete it first, "
+                                                               "only if its SHA-256 is this (a library of this kit, v1 or v2, is deleted without being named)")
     ap.add_argument("--firmware-shown")
-    ap.add_argument("--writes-memory", action="store_true", help="needed for a write step (L5, L6, L16, L17, L19, L20, N19, S16, S17, P29, P30): it changes the running camera's memory")
+    ap.add_argument("--writes-memory", action="store_true", help="needed for a write step (L5, L6, B5, B6, L16, L17, L19, L20, N19, S16, S17, P29, P30): it changes the running camera's memory")
     a = ap.parse_args()
     if a.which in WRITE_STEPS and a.go and not (a.dry_run or a.selftest) and not a.writes_memory:
         raise SystemExit("%s is a write step: %s. It needs --writes-memory as well. Use fx30_apply.py. Nothing was sent." % (a.which, WRITE_STEPS[a.which][2]))
+    if a.remove_library:
+        if not re.fullmatch(r"[0-9a-fA-F]{64}", a.remove_library):
+            raise SystemExit("--remove-library takes the 64 hexadecimal digits of the file's SHA-256 (the stopped run prints them). Nothing was sent.")
+        EXTRA_LIBS[a.remove_library.lower()] = "the file named with --remove-library"
     lib = use(a.which)
     if a.dry_run or a.selftest:
         if a.selftest:                              # --dry-run and --selftest win over --go (the launchers always pass --go): nothing is sent

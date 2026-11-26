@@ -6,7 +6,8 @@
 # against, and these constants (modding/FX30_PORT.md):
 #   L5/L6    IMAGER 0x13bd0d8 (0x8e5838 returns it; = A7 IV 0x8981f2), drive-parameter pointer at control +0x690 (the constructor block
 #            0x8e78bc stores it at 0x8e79e2, where the A7 IV's stores +0x684), stored record 0x160 bytes (0x8e8800). The header sets MULTI_REC:
-#            five stored records (0x820, 0x880, 0x890, 0x8c0, 0x8d0), each in an NTSC and a PAL variant.
+#            five stored records (0x820, 0x880, 0x890, 0x8c0, 0x8d0), each in an NTSC and a PAL variant. Design ogsq_fx30_v2 (v1 left
+#            the sensor's window registers, the register matrix's column 1, stock: three cameras, 2026-11-25/26).
 #   L19/L20, N19/N20, P29/P30   av-cam.bin at physical 0x401000000 (kemco: memrsv=0x01000000@0x401000000:ex, as the FX3)
 # Steps: L = open gate (5/6 sensor side, 16/17 output size, 19/20 encoder side with the MP4 header heights), N19/N20 = the encoder side
 # without the heights (--no-meta), S = the rear screen and De-Squeeze Display words (16/17), P = the optional playback decoder (29/30).
@@ -18,8 +19,12 @@ cd "$H/../helper"
 CC=(../../../work/venv_zig/Scripts/python.exe -m ziglang cc -target aarch64-linux-gnu -std=gnu11 -O1 -Wall -Wextra -Werror -fPIC -shared -nostdlib -ffreestanding
     -fno-stack-protector -fno-builtin -fno-asynchronous-unwind-tables -Wl,-soname,libJit.so -Wl,--no-undefined -Wl,-z,now -g0 -s -Wl,-z,max-page-size=4096)
 for L in 5 6; do
-  "${CC[@]}" -DLEVEL=$L '-DSITES_H="expected_sites_ogsq_fx30_v1.h"' '-DDESIGN_LABEL="ogsq_fx30_v1"' -DIMAGER=0x13bd0d8UL -DCTRL_DRVPARAM=0x690U -DREC=0x160U \
+  "${CC[@]}" -DLEVEL=$L '-DSITES_H="expected_sites_ogsq_fx30_v2.h"' '-DDESIGN_LABEL="ogsq_fx30_v2"' -DIMAGER=0x13bd0d8UL -DCTRL_DRVPARAM=0x690U -DREC=0x160U \
     readcheck.c "$SEN" -o "$H/libJit_fx30_L$L.so"
+done
+for L in 5 6; do     # B5/B6: the sensor design's variant B (the LC and read-out values of the repo's issue 1), for an A/B test
+  "${CC[@]}" -DLEVEL=$L '-DSITES_H="expected_sites_ogsq_fx30_v2b.h"' '-DDESIGN_LABEL="ogsq_fx30_v2b"' -DIMAGER=0x13bd0d8UL -DCTRL_DRVPARAM=0x690U -DREC=0x160U \
+    readcheck.c "$SEN" -o "$H/libJit_fx30_B$L.so"
 done
 for L in 16 17; do
   "${CC[@]}" -DLEVEL=$L '-DWORDS_H="expected_words_outsz2560_fx30_v1.h"' readcheck.c "$SEN" -o "$H/libJit_fx30_L$L.so"
@@ -33,4 +38,4 @@ for L in 29 30; do
   "${CC[@]}" -DLEVEL=$L '-DAD_H="expected_ad_avdec8k_fx30_v1.h"' -DAVCAM_PHYS=0x401000000UL readcheck.c -o "$H/libJit_fx30_P$L.so"
 done
 cd "$H"
-for N in L5 L6 L16 L17 L19 L20 N19 N20 S16 S17 P29 P30; do echo "$(sha256sum libJit_fx30_$N.so | cut -d' ' -f1) $(stat -c %s libJit_fx30_$N.so) $N"; done
+for N in L5 L6 B5 B6 L16 L17 L19 L20 N19 N20 S16 S17 P29 P30; do echo "$(sha256sum libJit_fx30_$N.so | cut -d' ' -f1) $(stat -c %s libJit_fx30_$N.so) $N"; done

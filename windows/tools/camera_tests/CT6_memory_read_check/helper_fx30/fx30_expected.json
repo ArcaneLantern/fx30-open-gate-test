@@ -1,5 +1,5 @@
 {
- "label": "fx30read_v1",
+ "label": "fx30read_v2",
  "cp_lo": 786432,
  "cp_hi": 40894464,
  "avcam_phys": 17196646400,
@@ -62,6 +62,12 @@
    "name": "readout",
    "address": "0xe0328c",
    "length": 84,
+   "soft": 0
+  },
+  {
+   "name": "sensor_window",
+   "address": "0x1038d58",
+   "length": 160,
    "soft": 0
   },
   {
@@ -293,6 +299,15 @@
    "soft": 1
   }
  ],
+ "variant_b_sites": [
+  "lc",
+  "readout",
+  "stored_record_0x820",
+  "stored_record_0x880",
+  "stored_record_0x890",
+  "stored_record_0x8c0",
+  "stored_record_0x8d0"
+ ],
  "lm_sites": 6,
  "av_sites": 101,
  "av_guards": [
@@ -368,7 +383,8 @@
   ]
  ],
  "designs": {
-  "ogsq_fx30_v1": "6ff897d4090af2089f2685083c1709b945d8b14c0a194bb27fe88df3d1b329db",
+  "ogsq_fx30_v2": "15bbfa225f9ed9189885448b5089125160c56ee36a8b51a10f4e467c5de23c7a",
+  "ogsq_fx30_v2b": "677a54af761c355990b32a1e6dcd82552a2920751c5d6296ee2486ced9d38156",
   "outsz2560_fx30_v1": "b5bf4a2965951b24e54f17a4d5240d841ece9540a1fe5bf946eb4766b95aa04b",
   "ogfile2560_hs_s_fx30_v2": "ba08be0de06d94381e90f164083ea2bb39f00a7a86f7c1def08986e8894fe4e4",
   "lcd32dsq_fx30_v1": "eade67d0b81afdad907e9289dfa7567a076bc7fcb9ee7cfea59305b47178df82",

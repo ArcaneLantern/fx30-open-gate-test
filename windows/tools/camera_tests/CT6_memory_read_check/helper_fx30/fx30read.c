@@ -385,14 +385,15 @@ static void cp_part(void)
         puts_("site "); puts_(c->name); puts_(" "); putaddr(c->address); puts_(" len "); putnum(c->length);
         if (c->length > sizeof big || !cp_bytes(c->address, big, c->length)) { puts_("  NOT READ\n"); n_other++; continue; }
         int st = same(big, c->stock, c->length), tg = c->target && same(big, c->target, c->length);
+        int tb = !st && !tg && c->alt && same(big, c->alt, c->length);      /* the sensor design's variant B (ogsq_fx30_v2b) */
         if (c->length <= 16) { puts_(" bytes "); puthex(big, c->length); }
         else {
             u32 d = 0;
             for (u32 k = 0; k < c->length; k++) if (big[k] != c->stock[k]) d++;
             puts_(" bytes differing from stock "); putnum(d);
         }
-        puts_(st ? "  STOCK\n" : tg ? "  TARGET\n" : c->soft ? "  OTHER (not counted: filled at run time)\n" : "  OTHER\n");
-        if (!st && !tg) {
+        puts_(st ? "  STOCK\n" : tg ? "  TARGET\n" : tb ? "  TARGET-B\n" : c->soft ? "  OTHER (not counted: filled at run time)\n" : "  OTHER\n");
+        if (!st && !tg && !tb) {
             if (!c->soft) n_other++;
             if (c->length > 16) { puts_("other "); puts_(c->name); puts_(" "); puthex(big, c->length); puts_("\n"); }
         }

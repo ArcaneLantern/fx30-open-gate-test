@@ -5,6 +5,7 @@
 helper_fx2/emu_fx2.py with this camera's model (same harness: helper/emu_built.py; the same coprocessor model: only a transfer of one
 whole page, direction 0, into the allocated buffer is accepted). Cases, for both libraries (check and dump):
   stock        an FX30 with the 6.01 files and stock memory (NTSC stored records)  -> every check same, verdict READY
+  movie        the same after the camera set a 4K movie mode (the sensor register shadow holds matrix column 1) -> READY
   stock-pal    the same with the stored records a PAL camera computes               -> READY (the records are soft sites)
   applied      every design site holding its new bytes, the screen step included    -> TARGET everywhere, verdict READY
   no-screen    the open-gate state without the screen step                          -> open-gate TARGET, screen words STOCK, READY
@@ -13,6 +14,10 @@ whole page, direction 0, into the allocated buffer is accepted). Cases, for both
   fx2          the FX2 1.01 files and coprocessor image                             -> identity DIFFERS, verdict NOT READY
   a7iv         the A7 IV 6.02 files and coprocessor image                           -> identity DIFFERS, verdict NOT READY
   no-reserve   a command line without the av-cam reservation                        -> av-cam.bin not read, NOT READY
+  applied-b    the same with the sensor design's variant B (ogsq_fx30_v2b)            -> its LC and read-out spans and stored records
+               TARGET-B, everything else TARGET, verdict READY
+  v1-applied   the sensor design of kit v1 (ogsq_fx30_v1: row 96, sensor registers untouched) still in memory -> its sites are
+               neither stock nor v2's, verdict NOT READY (a cold boot is needed before kit v2)
   exists       a result file already present                                        -> nothing done
 and the other way round, the published check libraries of the FX3, FX2, ZV-E1 and A7S III kits run on a stock FX30: each must say NOT READY
 (an FX30 owner might run one of those kits; their apply scripts start only after a READY check).
@@ -89,12 +94,28 @@ class Run(E.Run):
         return self
 
 
-def model(build="fx30_601", applied=False, screen=True, reserve=True, exists=False, enc="ogfile2560_hs_s_fx30_v2", system="ntsc"):
+MATRIX, MROW, COLMAP = 0x1038D1C, 20, 0x1039938
+
+
+def set_mode(cp, index):
+    """What the firmware's 0x8e8218 does when a drive mode is set: the mode's matrix column goes to the register shadow."""
+    col = struct.unpack_from("<I", cp, COLMAP - BASE + 4 * index)[0]
+    a = MATRIX
+    while True:
+        ptr = struct.unpack_from("<I", cp, a - BASE)[0]
+        if not ptr:
+            return
+        cp[ptr - BASE] = cp[a - BASE + 4 + col]
+        a += MROW
+
+
+def model(build="fx30_601", applied=False, screen=True, reserve=True, exists=False, enc="ogfile2560_hs_s_fx30_v2", system="ntsc",
+          sensor="ogsq_fx30_v2", movie=False):
     cp = bytearray(ex(build, "nflasha8/cpapp-b.bin"))
     av = bytearray(ex(build, "nflasha3/av-cam.bin"))
     libs = {n: ex(build, "nflasha15/lib" + n) for n in ("/libmpr.so", "/libsencore.so", "/libJiritsu.so")}
     lm = bytearray(libs["/libmpr.so"])
-    og, oz, fl, sc = design("ogsq_fx30_v1"), design("outsz2560_fx30_v1"), design(enc), design("lcd32dsq_fx30_v1")
+    og, oz, fl, sc = design(sensor), design("outsz2560_fx30_v1"), design(enc), design("lcd32dsq_fx30_v1")
     ram = {}
     if build == "fx30_601":                      # the FX30's RAM tables; a foreign body keeps its own image and zeros
         for m, sr in og["stored_records"].items():
@@ -114,6 +135,8 @@ def model(build="fx30_601", applied=False, screen=True, reserve=True, exists=Fal
             for s in sc["sites"]:
                 a = int(s["ram_address"], 16)
                 cp[a - BASE:a - BASE + 4] = bytes.fromhex(s["new"])
+    if movie:                                    # the camera entered 4K 24p (mode 0x8c0, index 6) after whatever was written
+        set_mode(cp, 6)
     lm_at = 0x7F82D15000
     maps = b"".join(b"%x-%x r-xp 00000000 b3:0f 100 /usr/lib%s\n" % (a, a + ((len(libs[n]) + 0xFFF) & ~0xFFF), n.encode())
                     for n, a in (("/libsencore.so", 0x7F80000000), ("/libJiritsu.so", 0x7F81000000), ("/libmpr.so", lm_at)))
@@ -147,7 +170,10 @@ def main():
     for which in ("check", "dump"):
         lib = (HERE / f"libJit_fx30_{which}.so").read_bytes()
         for case, kw, want in (("stock", {}, ("VERDICT READY", "STOCK")), ("stock-pal", {"system": "pal"}, ("VERDICT READY", "STOCK")),
-                               ("applied", {"applied": True}, ("VERDICT READY", "TARGET")),
+                               ("movie", {"movie": True}, ("VERDICT READY", "STOCK")),
+                               ("applied", {"applied": True, "movie": True}, ("VERDICT READY", "TARGET")),
+                               ("applied-b", {"applied": True, "movie": True, "sensor": "ogsq_fx30_v2b"}, ("VERDICT READY", "TARGET-B")),
+                               ("v1-applied", {"applied": True, "movie": True, "sensor": "ogsq_fx30_v1"}, ("VERDICT NOT READY", "OTHER")),
                                ("no-screen", {"applied": True, "screen": False}, ("VERDICT READY", "TARGET")),
                                ("no-meta", {"applied": True, "enc": "ogfile2560_hs_s_fx30_v1"}, ("VERDICT READY", "TARGET")),
                                ("fx3", {"build": "fx3_702"}, ("VERDICT NOT READY", "DIFFERS from the 6.01 update")),
@@ -169,7 +195,7 @@ def main():
                 problems += ["missing %r" % w for w in want if w not in text]
                 if "== done" not in text:
                     problems.append("result not complete")
-                if case == "stock" and ("OTHER" in text.replace("OTHER (not counted", "") or "DIFFERS" in text or "!!" in text.split("== identity")[1]):
+                if case in ("stock", "movie") and ("OTHER" in text.replace("OTHER (not counted", "") or "DIFFERS" in text or "!!" in text.split("== identity")[1]):
                     problems.append("a stock camera is not reported as all stock")
                 if case == "stock-pal":
                     recs = [ln for ln in text.split("\n") if ln.startswith("site stored_record_")]
@@ -187,10 +213,20 @@ def main():
                     lm = [ln for ln in text.split("\n") if ln.startswith("lm ")]
                     if sum(ln.endswith("TARGET") for ln in lm) != 4 or sum(ln.endswith("STOCK") for ln in lm) != 2:
                         problems.append("no-meta: libmpr lines %s" % lm)
-                if case in ("stock", "applied"):           # the sensor design's eight sites are hard
-                    sn = [ln for ln in text.split("\n") if ln.startswith(("site crop", "site window", "site pdaf", "site lc ", "site readout", "site geometry", "site record_"))]
-                    if len(sn) != 8 or not all(ln.endswith("  " + ("TARGET" if case == "applied" else "STOCK")) for ln in sn):
+                SENSOR_SITES = ("site crop", "site window", "site pdaf", "site lc ", "site readout", "site geometry", "site record_", "site sensor_window")
+                if case in ("stock", "movie", "applied"):  # the sensor design's nine sites are hard
+                    sn = [ln for ln in text.split("\n") if ln.startswith(SENSOR_SITES)]
+                    if len(sn) != 9 or not all(ln.endswith("  " + ("TARGET" if case == "applied" else "STOCK")) for ln in sn):
                         problems.append("sensor sites: %s" % sn)
+                if case == "applied-b":                    # variant B: the two spans that differ and the five records say TARGET-B, the rest TARGET
+                    sn = {ln.split()[1]: ln.rsplit("  ", 1)[1] for ln in text.split("\n") if ln.startswith(SENSOR_SITES + ("site stored_record_",))}
+                    want_b = set(FACTS["variant_b_sites"])
+                    if len(sn) != 14 or len(want_b) != 7 or any(sn[k] != ("TARGET-B" if k in want_b else "TARGET") for k in sn) or "OTHER" in text.replace("OTHER (not counted", ""):
+                        problems.append("variant B sites: %s" % sn)
+                if case == "v1-applied":                   # kit v1's state: its matrix bytes are stock, its tables and records are not v2's
+                    sn = {ln.split()[1]: ln.rsplit("  ", 1)[1] for ln in text.split("\n") if ln.startswith(SENSOR_SITES)}
+                    if sn.get("sensor_window") != "STOCK" or not all(sn.get(k, "").startswith("OTHER") for k in ("crop", "lc", "geometry", "record_left", "record_right")):
+                        problems.append("v1 state: %s" % sn)
                 if which == "dump" and case == "stock" and text.count("cppage ") != sum(k for _, _, k in FACTS["dump_ranges"]):
                     problems.append("dump pages: %d" % text.count("cppage "))
             n_tr = sum(1 for c in r.lib_calls if c[0] == "transfer")

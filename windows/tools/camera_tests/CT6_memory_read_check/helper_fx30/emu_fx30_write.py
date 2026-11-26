@@ -8,7 +8,9 @@ helper_fx2/emu_fx2_write.py with this camera's models and steps:
   - L5/L6: the sensor object 0x13bd0d8 -> control -> +0x690 -> parameter object {vtable, 31, ids, 0, records} -> the 0x160-byte stored
     records; the five modes the design changes (0x820, 0x880, 0x890, 0x8c0, 0x8d0) hold the FX30's emulated stock records of one timing
     system (build/emu_drvparam.py fx30_601 with the 60 Hz or the 50 Hz table), the others a filler. readcheck.c's MULTI_REC path must
-    pick the variant every record holds and refuse a camera whose records agree on none;
+    pick the variant every record holds and refuse a camera whose records agree on none. Design ogsq_fx30_v2: nine table/record sites,
+    one of them the register matrix's rows of the sensor's window registers (seven bytes of column 1 change); a camera that still holds
+    kit v1's sensor design (ogsq_fx30_v1) must be refused;
   - L16/L17, S16/S17: the movie size table as the FX30's set-up fills it (build/emu_size_table.py fx30_601), and the loaded image for the
     screen words;
   - L19/L20, N19/N20: av-cam.bin at its physical address and libmpr.so in the process's own mapping;
@@ -153,8 +155,10 @@ def main():
                 return False
         return True
 
-    # ---- L5 / L6: the 8 table/record sites and the five stored records, NTSC or PAL
-    d = design("ogsq_fx30_v1")
+    # ---- L5 / L6: the 9 table/record sites and the five stored records, NTSC or PAL
+    d = design("ogsq_fx30_v2")
+    sensor = d["summary"]["sensor"]
+    cells = {int(a, 16): sensor["registers"][r] for r, a in sensor["cells"].items()}      # matrix byte -> [stock, new]
     srs = d["stored_records"]
     recs = {s: {int(m, 16): (RECS + v["index"] * REC, bytes.fromhex(v[s]["stock"]), bytes.fromhex(v[s]["design"])) for m, v in srs.items()} for s in ("ntsc", "pal")}
     table_allowed = {}
@@ -193,9 +197,13 @@ def main():
         before = mem.snapshot()
         r, t = go(L5, mem, al)
         name = "NTSC (60 Hz)" if system == "ntsc" else "PAL (50 Hz)"
-        ok(not r.bad and "DONE: all 13 sites hold the target bytes (apply)" in t and f"the stored records are the {name} variant" in t
+        ok(not r.bad and "DONE: all 14 sites hold the target bytes (apply)" in t and f"the stored records are the {name} variant" in t
            and state(mem, system) == "new" and changed_only(mem, before, al),
-           f"L5 on a stock FX30 ({system}): 8 sites and the five stored records new ({name} variant), nothing else changed ({r.n_writes} line writes)")
+           f"L5 on a stock FX30 ({system}): 9 sites and the five stored records new ({name} variant), nothing else changed ({r.n_writes} line writes)")
+        n_lines = r.n_writes
+        ok(len(cells) == 7 and all(mem.read(a, 1)[0] == new for a, (_, new) in cells.items())
+           and (mem.read(min(cells), 1)[0] | mem.read(min(cells) + 20, 1)[0] << 8) == d["summary"]["window_row"] + sensor["row_bias"],
+           f"L5 ({system}): the register matrix's column 1 holds the sensor's new window (registers 6/7 = row 94 + 81, 8/9 = 1990 line pairs, 14, 16, 25)")
         r, t = go(L5, mem, al)
         ok(not r.bad and "NOTHING TO DO" in t and r.n_writes == 0, f"L5 again ({system}): nothing to do, no write")
         r, t = go(L6, mem, al)
@@ -218,12 +226,91 @@ def main():
     mem.write(a8c0 + 0x66, b"\x00\x10")
     r, t = go(L5, mem, al)
     ok(not r.bad and r.n_writes == 0 and "hold neither timing variant" in t, "L5 with the 0x8c0 record's window height foreign: nothing is written")
-    for lose in (1, 6, 9, 13):
+    assert n_lines == 14                                    # one write per site: 9 table/record sites by address (the matrix is the 9th), 5 stored records
+    for lose in (1, 6, 9, 13, 14):                          # a picture record, a table, the register matrix, stored records (the last one too)
         mem = camera()
         before = mem.snapshot()
         r, t = go(L5, mem, al, lose=lose)
         ok(not r.bad and "NOT DONE: a step failed; every site this run touched was put back" in t and state(mem, "ntsc") == "stock" and changed_only(mem, before, {}),
            f"L5 with line write {lose} lost: reported, every site put back")
+    # ---- variant B of the sensor step (ogsq_fx30_v2b, B5 / B6): the same sites, two values differ per mode (an A/B test on a camera)
+    db = design("ogsq_fx30_v2b")
+    B5, B6 = lib("B5"), lib("B6")
+    recs_b = {s: {int(m, 16): (RECS + v["index"] * REC, bytes.fromhex(v[s]["stock"]), bytes.fromhex(v[s]["design"])) for m, v in db["stored_records"].items()} for s in ("ntsc", "pal")}
+
+    def allowed_b(system):
+        al_b = {}
+        for p in db["patches"]:
+            a = int(p["addr"], 16)
+            for k, (o, n) in enumerate(zip(bytes.fromhex(p["old"]), bytes.fromhex(p["new"]))):
+                if o != n:
+                    al_b[a + k] = (o, n)
+        for a, st, nw in recs_b[system].values():
+            for k in range(REC):
+                if st[k] != nw[k]:
+                    al_b[a + k] = (st[k], nw[k])
+        return al_b
+
+    def state_b(mem, system):
+        vals = [(mem.read(a, 1)[0], pr) for a, pr in allowed_b(system).items()]
+        return "stock" if all(v == pr[0] for v, pr in vals) else "new" if all(v == pr[1] for v, pr in vals) else "mixed"
+
+    wrote_nothing = lambda t: "nothing is written" in t and not any(ln.startswith(("DONE: ", "NOTHING TO DO", "NOT DONE: ")) for ln in t.split("\n"))
+    differ = sorted(a for a in allowed_b("ntsc") if allowed_b("ntsc")[a] != allowed_for("ntsc").get(a))
+    ok(len(differ) == 5 * 2 + 5 * 2 and all(mem_a in allowed_for("ntsc") for mem_a in differ),   # one byte each (121 -> 145, 2014 -> 2020)
+       f"variant B differs from the design in {len(differ)} bytes: the first phase-detect row and the read-out length of five table rows and five stored records")
+    for system in ("ntsc", "pal"):
+        alb = allowed_b(system)
+        mem = camera(system)
+        before = mem.snapshot()
+        r, t = go(B5, mem, alb)
+        ok(not r.bad and "DONE: all 14 sites hold the target bytes (apply)" in t and state_b(mem, system) == "new" and changed_only(mem, before, alb)
+           and all(mem.read(a, 1)[0] == new for a, (_, new) in cells.items()),
+           f"B5 on a stock FX30 ({system}): variant B's 9 sites and five stored records new, the sensor's window registers as the design's, nothing else changed")
+        snap_b = mem.snapshot()
+        for which, lb in (("L5", L5), ("L6", L6)):
+            r, t = go(lb, mem, {**alb, **allowed_for(system)})
+            ok(not r.bad and r.n_writes == 0 and wrote_nothing(t) and changed_only(mem, snap_b, {}),
+               f"{which} (variant A) on a camera that holds variant B ({system}): nothing is written, and its result reads as NOTHING WRITTEN")
+        r, t = go(B5, mem, alb)
+        ok(not r.bad and "NOTHING TO DO" in t and r.n_writes == 0, f"B5 again ({system}): nothing to do, no write")
+        r, t = go(B6, mem, alb)
+        ok(not r.bad and "(put back)" in t and "DONE" in t and state_b(mem, system) == "stock" and changed_only(mem, before, {}),
+           f"B6 ({system}): everything stock again, byte for byte")
+        # the other way round: variant A in memory, variant B's steps write nothing
+        al_a = allowed_for(system)
+        r, t = go(L5, mem, al_a)
+        ok(not r.bad and state(mem, system) == "new", f"L5 after B6 ({system}): variant A applied (the switch-to-a order)")
+        snap_a = mem.snapshot()
+        for which, lb in (("B5", B5), ("B6", B6)):
+            r, t = go(lb, mem, {**alb, **al_a})
+            ok(not r.bad and r.n_writes == 0 and wrote_nothing(t) and changed_only(mem, snap_a, {}),
+               f"{which} (variant B) on a camera that holds variant A ({system}): nothing is written")
+        r, t = go(L6, mem, al_a)
+        r2, t2 = go(B5, mem, alb)
+        ok(not r.bad and not r2.bad and "DONE" in t and "DONE: all 14 sites hold the target bytes (apply)" in t2 and state_b(mem, system) == "new",
+           f"L6 then B5 ({system}): variant B applied (the switch-to-b order)")
+    mem = camera()
+    r, t = go(B5, mem, allowed_b("ntsc"), lose=7)
+    ok(not r.bad and "NOT DONE: a step failed; every site this run touched was put back" in t and state_b(mem, "ntsc") == "stock",
+       "B5 with the LC span's write lost: reported, every site put back")
+    # a camera that still holds kit v1's sensor design (no cold boot since): its tables are neither stock nor v2's
+    v1 = design("ogsq_fx30_v1")
+    mem = camera()
+    for p in v1["patches"]:
+        mem.write(int(p["addr"], 16), bytes.fromhex(p["new"]))
+    for m, v in v1["stored_records"].items():
+        mem.write(RECS + v["index"] * REC, bytes.fromhex(v["ntsc"]["design"]))
+    before = mem.snapshot()
+    for which, lb in (("L5", L5), ("L6", L6)):
+        r, t = go(lb, mem, al)
+        ok(not r.bad and r.n_writes == 0 and "nothing is written" in t and changed_only(mem, before, {}),
+           f"{which} of kit v2 on a camera that still holds kit v1's sensor design: nothing is written")
+    mem = camera()
+    mem.write(min(cells), bytes([sensor["registers"]["6"][0] ^ 0x10]))
+    r, t = go(L5, mem, al)
+    ok(not r.bad and r.n_writes == 0 and "holds neither the stock nor the new bytes; nothing is written" in t,
+       "L5 with a sensor-window byte of the matrix holding another value: nothing is written")
     mem = camera()
     mem.write(OBJ + 0x10, bytes(4))
     r, t = go(L5, mem, al)

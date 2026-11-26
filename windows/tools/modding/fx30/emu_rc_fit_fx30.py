@@ -96,7 +96,7 @@ def main():
     res = {"about": __doc__, "assumed_settings": {hex(a): b.hex() for a, b in SETTINGS.items()}, "cases": {}}
     for name, ref, pa in (("stock 16:9 window 5952x3348", 3348, (1, 1, 1, 1)),
                           ("open gate 5952x3968, ratio 1/1 (the A7 IV's ogsq_v2 case)", 3968, (1, 1, 1, 1)),
-                          ("open gate 5952x3968, ratio 27/32 (ogsq_fx30_v1)", 3968, (1, 1, 27, 32))):
+                          ("open gate 5952x3968, ratio 27/32 (ogsq_fx30_v2)", 3968, (1, 1, 27, 32))):
         e = run(ref, pa)
         a = AIV.run({3348: 3942, 3968: 4672}[ref], pa)
         res["cases"][name] = {"fx30": e, "a7iv_same_case_7008_wide": {k: a[k] for k in ("start", "size", "pixel_aspect_q12")}}
@@ -106,8 +106,8 @@ def main():
     ok = (all(v["fx30"]["error"] is None for v in c.values())
           and c["stock 16:9 window 5952x3348"]["fx30"]["size"][1] > 2437.9
           and c["open gate 5952x3968, ratio 1/1 (the A7 IV's ogsq_v2 case)"]["fx30"]["size"][1] < 2100
-          and c["open gate 5952x3968, ratio 27/32 (ogsq_fx30_v1)"]["fx30"]["size"][1] > 2437.9
-          and c["open gate 5952x3968, ratio 27/32 (ogsq_fx30_v1)"]["fx30"]["start"][1] < 1)
+          and c["open gate 5952x3968, ratio 27/32 (ogsq_fx30_v2)"]["fx30"]["size"][1] > 2437.9
+          and c["open gate 5952x3968, ratio 27/32 (ogsq_fx30_v2)"]["fx30"]["start"][1] < 1)
     res["lever_keeps_every_row"] = ok
     out = ROOT / "evidence/fx30/sensor/rc_fit_fx30_emu.json"
     out.parent.mkdir(parents=True, exist_ok=True)

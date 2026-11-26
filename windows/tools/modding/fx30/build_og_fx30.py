@@ -1,8 +1,16 @@
-"""FX30 6.01 (fx30_601) open gate, sensor and first-stage side: design ogsq_fx30_v1 (FX30 port, 2026-11-26).
+"""FX30 6.01 (fx30_601) open gate, sensor and first-stage side: design ogsq_fx30_v2 (FX30 port, 2026-11-26; v2 the same day, after the
+first camera runs).
 
-  C:\\Python313\\python.exe -B build\\build_og_fx30.py            (needs Unicorn and capstone: C:\\Python313 has them)
+  C:\\Python313\\python.exe -B build\\build_og_fx30.py [--variant-b]     (needs Unicorn and capstone: C:\\Python313 has them)
 
-writes modding/designs/ogsq_fx30_v1.json and evidence/fx30/sensor/*.json. Nothing is written to a firmware file or sent to a camera.
+--variant-b writes design ogsq_fx30_v2b instead: ogsq_fx30_v2 with the two values a tester reported clean colour with (repo issue 1), for an
+A/B test on a camera. Only two table cells per mode and what the calculator derives from them in the stored records differ:
+  LC +12        first phase-detect row   121 (25 + 48 k, the rule every stock mode obeys)  ->  window row + 51 = 145 (as the 4K mode's 406 -> 457)
+  read-out +12  read-out length          2014 (line pairs + 24, as stock)                  ->  2020
+The sensor's registers, the other cells and the two picture records are the same as v2's. Variant B does NOT follow the stock rules: 145 is
+off the 48-row grid of the phase-detect blocks. It is carried because its values may come from a state that worked on a camera.
+
+writes modding/designs/ogsq_fx30_v2.json and evidence/fx30/sensor/*.json. Nothing is written to a firmware file or sent to a camera.
 
 What the FX30 does in 4K 16:9 (read from cpapp-b.bin 6.01, every fact asserted below):
   - 31 drive modes (ids 0xd10d68). 0x820, 0x880, 0x890, 0x8c0, 0x8d0 (indices 2, 4, 5, 6, 7) read the same 5952 x 3348 window ("6K") at
@@ -10,25 +18,36 @@ What the FX30 does in 4K 16:9 (read from cpapp-b.bin 6.01, every fact asserted b
     (column map 0x1039938). They differ only in timing: 0x8c0 = 23.98p (60 Hz table) / 24.00p (50 Hz), 0x820/0x880 = 29.97p / 25p, and
     0x890/0x8d0 are the same rates at line length 360 instead of 340.
   - The record selector 0x73ccde gives all five the same picture-record pair 0xc79440 / 0xc79ff8 (frame 5976 x 3356, crop 5952 x 3348).
-  - The register matrix (0x1038e48, 139 rows of 20 bytes, 14 columns) holds no window: columns 1 (5952 x 3348), 2 (5612 x 3156), 8 (4648 x 2616)
-    and 9 (5952 x 3140) are byte-identical. The window comes from the per-mode tables through the stored drive-parameter record.
-So the open gate keeps the 4K mode's own sensor set-up and line timing and only makes the window taller: 5952 x 3968 (3:2) from row 96, which
-centres it where the 16:9 window is centred (row 2080). It is read two rows per line period like the stock window: about 1,990 of the 4,410
-line periods of a 24p frame.
+  - The register matrix (0x1038d1c, 154 rows of 20 bytes: u32 pointer to the register's shadow value, 14 column bytes, 2 spare) holds the
+    SENSOR's window in seven rows. Columns 1 (5952 x 3348), 2 (5612 x 3156), 8 (4648 x 2616) and 9 (5952 x 3140) are equal in every other row
+    and use the same sensor mode (register 1 = 15); they differ in
+      registers 6/7   window row + 81                               (487, 583, 851, 591)
+      registers 8/9   (height + the four margins) / 2: line pairs   (1680, 1584, 1316, 1576)
+      register 14     first phase-detect block (= crop +18)         (9, 11, 16, 11)
+      register 16     phase-detect rows / 2                         (34, 32, 27, 32)
+      register 25     read-out f2 (= read-out +4)                   (41, 40, 34, 39)
+    v1 took the matrix to start at 0x1038e48 (139 rows): it missed the first 15 rows, concluded "the window is not in the matrix" and left
+    the sensor on the stock window. On three cameras (2026-11-25/26, evidence/fx30/camera/2026-11-25_pal and the repo's issues 1 and 2) every
+    table and record then described 3968 rows while the sensor sent 3348: picture in the top 2160 of 2560 rows, black below, blue cast.
+So the open gate keeps the 4K mode's own sensor mode and line timing and makes the window taller in BOTH places, the sensor's registers and
+the tables that describe it: 5952 x 3968 (3:2) from row 94. Every stock window of this sensor mode starts at a row that is 2 modulo 4 (406,
+502, 770, 510; the 4648 x 2616 one sits two rows off the centre 2080 to keep that), so the new window is two rows off the centre as well
+(v1: row 96). It is read two rows per line period like the stock window: 1,990 of the 4,410 line periods of a 24p frame.
 
 The cells (each of the five modes' rows; the rules are read off the FX30's own movie modes, which all obey them):
-  geometry 0xcb57a8.. (12-byte rows by mode id) +10   window row (406)                     -> 96
-  crop     0xd10de4 (20-byte rows) +6                 window row (406)                     -> 96
+  matrix   0x1038d1c (20-byte rows) column 1          registers 6/7, 8/9, 14, 16, 25       -> 175, 1990, 2, 41, 48 (the rules above)
+  geometry 0xcb57a8.. (12-byte rows by mode id) +10   window row (406)                     -> 94
+  crop     0xd10de4 (20-byte rows) +6                 window row (406)                     -> 94
            +18                                        first phase-detect block k (9)       -> 2     (LC +12 = 25 + 48 k in every movie mode)
   stream-0 0xe0278a (38) +26                          window height (3348)                 -> 3968
   stream-1 0xe02c24 (38) +26                          phase-detect rows p (68)             -> 82
-  LC       0xe030be (14) +8                           window row (406)                     -> 96
+  LC       0xe030be (14) +8                           window row (406)                     -> 94
            +12                                        first phase-detect row (457)         -> 121
   read-out 0xe03270 (14) +4                           f2, line pairs ahead of the picture (41) -> 48   (2 f2 = p + 14 in every line-340 movie mode)
            +12                                        read-out length in line periods (1704) -> 2014 ((rows + 12) / 2 + 24, as stock)
 Phase-detect rows sit at sensor rows 25 + 48 j. The rows a window carries were fitted on the four movie windows (406/3348, 510/3140,
-502/3156, 770/2616); row 96 is chosen so that the new window's first and last block lie well inside every margin those four allow (blocks
-j = 2..83: p = 82).
+502/3156, 770/2616); with row 94 the new window's first and last block lie inside margins the stock windows show (33 rows after the outer
+window's start, stock 31; 59 before its end, stock 57): blocks j = 2..83, p = 82.
 
 The picture records: a row model fitted on the FX30's three stock pairs of the same family (0xc79440 3356 rows, 0xc76560 3148 rows (DCI),
 0xc7abb0 3164 rows) -- each field that follows the stage rows does so as +rows, +rows/2, +rows/4, +p or +2 f2 (+0x95e is the window row) --
@@ -62,7 +81,13 @@ IDS = 0xD10D68
 NMODES = 31
 MODES = (0x820, 0x880, 0x890, 0x8C0, 0x8D0)
 COLMAP = 0x1039938
-MATRIX, MROWS, MROW = 0x1038E48, 139, 20
+VARIANT_B = "--variant-b" in sys.argv
+DESIGN = "ogsq_fx30_v2b" if VARIANT_B else "ogsq_fx30_v2"
+MATRIX, MROWS, MROW = 0x1038D1C, 154, 20            # v1 had 0x1038E48 / 139: the 15 rows before that are the window registers
+SHADOW0 = 0x1123DE4                                 # the register shadow: 4-byte entries {u16 register, u16 value}; a row points at the value
+WINDOW_REGS = (6, 7, 8, 9, 14, 16, 25)              # start row lo/hi, line pairs lo/hi, first phase-detect block, phase-detect pairs, read-out f2
+ROW_BIAS = 81                                       # registers 6/7 = window row + 81 in all four columns of sensor mode 15
+SENSOR_MODE = 15
 GEO = 0xCB57A8                                     # 12-byte rows: u32 mode id, u16 x3, u16 window row
 CROP, S0, S1, LC, RO = (0xD10DE4, 20), (0xE0278A, 38), (0xE02C24, 38), (0xE030BE, 14), (0xE03270, 14)
 PAIR = {"L": 0xC79440, "R": 0xC79FF8}
@@ -70,7 +95,8 @@ DCI = {"L": 0xC76560, "R": 0xC77118}
 P830 = {"L": 0xC7ABB0, "R": 0xC7B768}
 # (stage rows, phase-detect rows p, read-out f2, window row) of each stock pair, and of the design
 GEOM = {"8c0": (3356, 68, 41, 406), "dci": (3148, 64, 39, 510), "830": (3164, 64, 40, 502)}
-NEW_ROW, NEW_H = 96, 3968
+NEW_ROW, NEW_H = 94, 3968
+assert NEW_ROW % 4 == 2
 NEW = (NEW_H + 8, 82, 48, NEW_ROW)
 OUT = (4336, 2438)
 PAV = (27, 32)
@@ -99,9 +125,28 @@ def check_sensor_facts():
     col = struct.unpack_from("<%dI" % NMODES, X, COLMAP - B)
     assert all(col[i] == 1 for i in idx), "the five modes do not all use matrix column 1"
     rows = [rd(MATRIX + MROW * r, MROW) for r in range(MROWS)]
-    assert rd(MATRIX + MROW * MROWS, MROW) == bytes(MROW), "matrix end row"
-    for c in (2, 8, 9):
-        assert all(r[4 + 1] == r[4 + c] for r in rows), f"matrix column {c} differs from column 1"
+    assert rd(MATRIX + MROW * MROWS, MROW) == bytes(MROW) and MATRIX + MROW * (MROWS + 1) == COLMAP, "matrix end row"
+    assert rd(MATRIX - 4, 4) == bytes(4), "the matrix does not start at MATRIX"
+    reg = {}
+    for r, row in enumerate(rows):
+        ptr = struct.unpack_from("<I", row)[0]
+        slot, rem = divmod(ptr - SHADOW0, 4)
+        q = u16(X, ptr - 2 - B)                                          # the register number the shadow entry carries
+        assert rem == 2 and 0 <= slot < 0x200 and row[18:] == bytes(2) and q not in reg and (q == slot or q > 0x31), (r, hex(ptr))
+        reg[q] = MATRIX + MROW * r
+    assert all(k in reg for k in WINDOW_REGS + (1,))
+    byte = lambda k, c: X[reg[k] - B + 4 + c]
+    differ = sorted(k for k in reg if len({byte(k, c) for c in (1, 2, 8, 9)}) > 1)
+    assert differ == sorted(WINDOW_REGS), ("columns 1, 2, 8, 9 differ in registers", differ)
+    assert all(byte(1, c) == SENSOR_MODE for c in (1, 2, 8, 9))
+    # the window registers of every mode that uses one of the four columns follow the mode's own table rows
+    for i, c in enumerate(col):
+        if c not in (1, 2, 8, 9):
+            continue
+        crop, s0, s1, ro = (struct.unpack_from("<%dH" % (t[1] // 2), X, t[0] - B + t[1] * i) for t in (CROP, S0, S1, RO))
+        got = (byte(6, c) | byte(7, c) << 8, byte(8, c) | byte(9, c) << 8, byte(14, c), byte(16, c), byte(25, c))
+        want = (crop[3] + ROW_BIAS, (s0[13] + sum(s0[11:13]) + sum(s0[14:16])) // 2, crop[9], s1[13] // 2, ro[2])
+        assert got == want and s1[13] % 2 == 0, (i, c, got, want)
     for tbl in (CROP, S0, S1, LC, RO):
         base, n = tbl
         ref = rd(base + n * 6, n)
@@ -124,10 +169,19 @@ def check_sensor_facts():
     assert all(sel[m] == [PAIR["L"], PAIR["R"]] for m in MODES), {hex(m): sel[m] for m in MODES}
     others = [hex(m) for m, r in sel.items() if m not in MODES and set(r) & set(PAIR.values())]
     assert not others, others
-    return idx, geo
+    return idx, geo, reg
 
 
-def cells(idx, geo):
+def sensor_registers(row, h, margins, k, p, f2):
+    """Register -> byte for the window (the rules check_sensor_facts asserts on columns 1, 2, 8, 9)."""
+    start, pairs = row + ROW_BIAS, (h + margins) // 2
+    assert (h + margins) % 2 == 0 and p % 2 == 0 and start < 0x10000 and pairs < 0x1000
+    out = {6: start & 255, 7: start >> 8, 8: pairs & 255, 9: pairs >> 8, 14: k, 16: p // 2, 25: f2}
+    assert all(0 <= v < 256 for v in out.values())
+    return out
+
+
+def cells(idx, geo, reg):
     """(address, old bytes, new bytes) per table site: one site per table over the rows of indices 2..7 (row 3, 0x830, unchanged)."""
     inside, unclear = pdaf_blocks(NEW_ROW, NEW_H)
     assert not unclear and inside == list(range(2, 84)), (inside, unclear)
@@ -135,8 +189,11 @@ def cells(idx, geo):
     f2 = (p + 14) // 2
     assert (p, f2) == (NEW[1], NEW[2]) and (p + 14) % 2 == 0
     ro6 = (NEW_H + 12) // 2 + 24
+    lc6 = 25 + 48 * k
+    if VARIANT_B:                                    # repo issue 1's two values: first phase-detect row = window row + 51, read-out length 2020
+        lc6, ro6 = NEW_ROW + 51, 2020
     sites, imgcells = [], []
-    edits = {CROP: {3: NEW_ROW, 9: k}, S0: {13: NEW_H}, S1: {13: p}, LC: {4: NEW_ROW, 6: 25 + 48 * k}, RO: {2: f2, 6: ro6}}
+    edits = {CROP: {3: NEW_ROW, 9: k}, S0: {13: NEW_H}, S1: {13: p}, LC: {4: NEW_ROW, 6: lc6}, RO: {2: f2, 6: ro6}}
     names = {CROP: "crop", S0: "stream-0 window", S1: "stream-1 (phase detect)", LC: "LC", RO: "read-out"}
     for tbl, ed in edits.items():
         base, n = tbl
@@ -160,7 +217,27 @@ def cells(idx, geo):
     sites.append({"kind": "S", "addr": hex(glo), "old": bytes(old).hex(), "new": bytes(new).hex(), "where": "file",
                   "note": f"geometry table (12-byte rows by mode id, A7 IV 0xc3dc40's form): window row 406 -> {NEW_ROW} in the rows of "
                           + ", ".join(hex(m) for m in sorted(geo)) + " (0x830's row inside the span unchanged)"})
-    return sites, imgcells, {"p": p, "first_block": k, "f2": f2, "readout_length": ro6}
+    # the sensor's own window: column 1 of the matrix rows of registers 6..25 (one span; only the seven window bytes change)
+    s0 = struct.unpack_from("<19H", X, S0[0] - B + S0[1] * 6)
+    margins = sum(s0[11:13]) + sum(s0[14:16])
+    want = sensor_registers(NEW_ROW, NEW_H, margins, k, p, f2)
+    stock = sensor_registers(406, 3348, margins, 9, 68, 41)
+    mlo, mhi = min(reg[r] for r in WINDOW_REGS), max(reg[r] for r in WINDOW_REGS) + MROW
+    old = bytearray(rd(mlo, mhi - mlo))
+    new = bytearray(old)
+    for r in WINDOW_REGS:
+        o = reg[r] - mlo + 4 + 1
+        assert old[o] == stock[r], (r, old[o], stock[r])
+        new[o] = want[r]
+    assert sum(a != b for a, b in zip(old, new)) == len(WINDOW_REGS)
+    sites.append({"kind": "S", "addr": hex(mlo), "old": bytes(old).hex(), "new": bytes(new).hex(), "where": "file",
+                  "note": "register matrix 0x1038d1c, column 1 (modes 0x820, 0x880, 0x890, 0x8c0, 0x8d0), rows of registers 6..25: "
+                          + ", ".join(f"register {r} {stock[r]} -> {want[r]}" for r in WINDOW_REGS)
+                          + f" (start row {406 + ROW_BIAS} -> {NEW_ROW + ROW_BIAS}, line pairs {(3348 + margins) // 2} -> {(NEW_H + margins) // 2})"})
+    sensor = {"registers": {str(r): [stock[r], want[r]] for r in WINDOW_REGS}, "start_row_register": [406 + ROW_BIAS, NEW_ROW + ROW_BIAS],
+              "line_pairs": [(3348 + margins) // 2, (NEW_H + margins) // 2], "row_bias": ROW_BIAS, "margins": margins, "column": 1,
+              "shadow_base": hex(SHADOW0), "cells": {str(r): hex(reg[r] + 4 + 1) for r in WINDOW_REGS}, "matrix": hex(MATRIX), "matrix_rows": MROWS}
+    return sites, imgcells, {"p": p, "first_block": k, "f2": f2, "readout_length": ro6, "first_pdaf_row": lc6, "sensor": sensor}
 
 
 # ---------------------------------------------------------------- the row model
@@ -225,8 +302,8 @@ def build_pair(M, rules, base, frm, to, target):
 
 
 def main():
-    idx, geo = check_sensor_facts()
-    sites, imgcells, sfacts = cells(idx, geo)
+    idx, geo, reg = check_sensor_facts()
+    sites, imgcells, sfacts = cells(idx, geo, reg)
     M = F.Model(A)
     rules, column_like = fit_rules(M)
     # self-test: rebuild each real pair from the other
@@ -286,7 +363,7 @@ def main():
             ex = {"height": u16(d, 0x66), "pdaf_rows": u16(d, 0x8C), "row": (u16(d, 0xF6), u16(d, 0x102)), "first_block": u16(d, 0x10E),
                   "readout_length": u16(d, 0x142), "first_pdaf_row": u16(d, 0x15A)}
             assert ex == {"height": NEW_H, "pdaf_rows": sfacts["p"], "row": (NEW_ROW, NEW_ROW), "first_block": sfacts["first_block"],
-                          "readout_length": sfacts["readout_length"], "first_pdaf_row": 121}, ex
+                          "readout_length": sfacts["readout_length"], "first_pdaf_row": sfacts["first_pdaf_row"]}, ex
             var[system] = (bytes(s), bytes(d))
         offs = sorted({k for s, d in var.values() for k in range(len(s)) if s[k] != d[k]})
         pick = lambda b: bytes(b[k] for k in offs)
@@ -302,25 +379,32 @@ def main():
               f"{[hex(k) for k in offs if var['ntsc'][0][k] != var['pal'][0][k] or var['ntsc'][1][k] != var['pal'][1][k]]}")
     ev = ROOT / "evidence/fx30/sensor"
     ev.mkdir(parents=True, exist_ok=True)
-    (ev / "ogsq_fx30_v1_stored_records_emu.json").write_text(json.dumps({
+    (ev / f"{DESIGN}_stored_records_emu.json").write_text(json.dumps({
         "about": "Stored drive-parameter records (0x160 bytes) of the five modes that share the picture-record pair, from the FX30's own calculator "
-                 "0x354204 (build/emu_drvparam.py fx30_601), stock and with ogsq_fx30_v1's table cells, plus the vertical sampling ratio 27/32 at +6/+7, "
+                 "0x354204 (build/emu_drvparam.py fx30_601), stock and with " + DESIGN + "'s table cells, plus the vertical sampling ratio 27/32 at +6/+7, "
                  "with the 60 Hz (ntsc) and the 50 Hz (pal) timing table. The sites are the union of the bytes either variant changes.",
         "records_base_in_emulation": hex(f[0x10]), "record_bytes": 0x160, "modes": recs_out}, indent=1) + "\n", encoding="utf8", newline="\n")
-    (ev / "ogsq_fx30_v1_selftest.json").write_text(json.dumps({
+    (ev / f"{DESIGN}_selftest.json").write_text(json.dumps({
         "about": "build/build_og_fx30.py self-test: the row model (fitted on the stock pairs 0xc79440 3356 rows, 0xc76560 3148 rows, 0xc7abb0 3164 rows) "
                  "with build_fhnative.assemble (planner columns, movie row rule, firmware packers) rebuilds each real pair from the other",
         "rules": {h: {hex(o): f"{k[0]}*{k[1]}" for o, k in sorted(rules[h].items())} for h in "LR"},
         "fields_left_stock_column_or_output_dependent": {h: [hex(o) for o in v] for h, v in column_like.items()},
         "rebuilds": selftest, "exact": exact}, indent=1) + "\n", encoding="utf8", newline="\n")
-    out = {"design": "ogsq_fx30_v1", "build": BUILD,
-           "title": "FX30 open gate, sensor side: 5952 x 3968 (3:2) window from row 96 in modes 0x820/0x880/0x890/0x8c0/0x8d0, first stage 5976 x 3976 "
+    out = {"design": DESIGN, "build": BUILD,
+           "title": f"FX30 open gate, sensor side: 5952 x 3968 (3:2) window from row {NEW_ROW} in modes 0x820/0x880/0x890/0x8c0/0x8d0 (the sensor's "
+                    "window registers in matrix column 1 and the tables that describe it), first stage 5976 x 3976 "
                     "squeezed into the stock 4336 x 2438 front end, vertical sampling ratio 27/32",
+           **({"variant_of": {"design": "ogsq_fx30_v2", "what": "LC +12 (first phase-detect row) = window row + 51 = %d instead of 25 + 48 k = %d, "
+                              "read-out length %d instead of %d: the two values of the repo's issue 1; everything else is v2's"
+                              % (sfacts["first_pdaf_row"], 25 + 48 * sfacts["first_block"], sfacts["readout_length"], (NEW_H + 12) // 2 + 24)}} if VARIANT_B else {}),
+           "supersedes": {"design": "ogsq_fx30_v1", "why": "v1 left the sensor's window registers (matrix column 1, registers 6/7, 8/9, 14, 16, 25) "
+                          "stock: the sensor sent 3348 rows from row 406 while the tables said 3968 from row 96 (three cameras, 2026-11-25/26)"},
            "artifact": "cpapp-b.bin", "artifact_sha256": SHA, "generated_by": "build/build_og_fx30.py",
            "ported_from": {"design": "ogsq_v3", "build": "a7iv_602", "how": "the A7 IV's mechanism (full-height window, Lrc squeeze, 27/32) rebuilt on the FX30's own tables and records"},
            "modes": [hex(m) for m in MODES], "mode_indices": idx,
            "summary": {"window": [5952, NEW_H], "window_row": NEW_ROW, "stock_window": [5952, 3348], "stock_window_row": 406,
-                       "first_stage": [5976, NEW[0]], "front_end": list(OUT), "pdaf": sfacts, "line_periods_per_frame_24p": 4410,
+                       "first_stage": [5976, NEW[0]], "front_end": list(OUT), "pdaf": {k: v for k, v in sfacts.items() if k != "sensor"},
+                       "sensor": sfacts["sensor"], "line_periods_per_frame_24p": 4410,
                        "readout_line_periods": sfacts["readout_length"], "lrc": lrc, "record_fields_changed": nfields,
                        "sites": len(sites), "bytes": sum(len(s["old"]) // 2 for s in sites),
                        "expected_working_state": {"crop": [5952, NEW_H], "front_end": list(OUT), "second_scaler_takes": "the whole front end", "file": [3840, 2560]}},
@@ -332,8 +416,8 @@ def main():
                                  "(emulation " + hex(f[0x10]) + ") + index x 0x160; the write level finds each mode's record through the pointer chain",
            "stored_record_extra": [{"offset": "0x6", "old": "01", "new": "%02x" % PAV[0], "note": "vertical sampling ratio, numerator"},
                                    {"offset": "0x7", "old": "01", "new": "%02x" % PAV[1], "note": "vertical sampling ratio, denominator"}],
-           "evidence": ["evidence/fx30/sensor/ogsq_fx30_v1_selftest.json", "evidence/fx30/sensor/ogsq_fx30_v1_stored_records_emu.json"]}
-    (ROOT / "modding/designs/ogsq_fx30_v1.json").write_text(json.dumps(out, indent=1) + "\n", encoding="utf8", newline="\n")
+           "evidence": [f"evidence/fx30/sensor/{DESIGN}_selftest.json", f"evidence/fx30/sensor/{DESIGN}_stored_records_emu.json"]}
+    (ROOT / f"modding/designs/{DESIGN}.json").write_text(json.dumps(out, indent=1) + "\n", encoding="utf8", newline="\n")
     print(json.dumps(out["summary"]))
 
 
