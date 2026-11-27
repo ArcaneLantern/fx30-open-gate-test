@@ -21,11 +21,9 @@ opened the HEVC channel (issue #10). The contributed **p50 group** (height 2560,
 |---|---|---|---|
 | `libJit_fx30_L19_50p_relink.so` | N102 | `b6d009db18aa61a7b03fb91cbd0433840bd65acf8325fc77096d94c9a99251a2` | apply the 50p encoder design at 6.00 addresses (**use this one**) |
 | `libJit_fx30_L20_50p_relink.so` | N103 | `569b756907b6a6a228391977afc1d0cddc5260cce9855e0f86f0053050a183d4` | put it back |
-| `libJit_fx30_L5_50p_sensor.so` | N99 | `388f14e1af244d0d3681f890ab4c7f6389d25b551019c9651cfd460d5effb5e6` | optional fallback: 50p sensor step for mode 0x830 (smaller 5612×3732 window) |
-| `libJit_fx30_L6_50p_sensor.so` | N96 | `98996e2efe708f2b9b6ff266f695bb6032c6631a4542ce01c9a817eb3217db4a` | put the fallback back |
 | `expected_mp_ogfile50p_fx30_relink.h` | — | `4a98507aa1b41ca7…` | generated site/stock table for N102 (6.00 relink) |
-| `expected_sites_ogsq50_fx30_v1.h` | — | `cdd5f96ca1a8f938…` | site table for the optional sensor step |
-| `D-50p-rec-830.json` | — | `a25c9b9a9b3ef0fe…` | the 0x830 record used by the sensor fallback |
+| `expected_sites_ogsq50_fx30_v1.h` | — | `cdd5f96ca1a8f938…` | site table of the sensor design (addresses verified STOCK on 6.00; kept as reference) |
+| `D-50p-rec-830.json` | — | `a25c9b9a9b3ef0fe…` | **reference only** — the emulator-derived `0x830` record. A 6.00 body does **not** have this record; see below |
 | `fx30_run.steps.diff` | — | — | the `WRITE_STEPS` additions we used (for reference) |
 
 All libraries are freestanding AArch64, built with ziglang 0.16.0, no imports. They are **not** PIN-verified by the
@@ -42,7 +40,7 @@ N102 -> L5 -> L16 -> N97
 
 Do **not** apply the old N98 before N102; N102 covers all 101 av-cam sites N98 covered.
 
-Measured on the body above, four clips (details and the full "Please send back" list in
+Measured on the body above, five clips (details and the full "Please send back" list in
 [issue #13](https://github.com/ArcaneLantern/fx30-open-gate-test/issues/13)):
 
 | Format | Size | fps | Duration | Frames | Result |
@@ -51,10 +49,24 @@ Measured on the body above, four clips (details and the full "Please send back" 
 | XAVC S 4K 50p | 3840×2560 | 50.000 | 169.44 s | 8,472 | no drops, no band |
 | XAVC HS 4K 50p | 3840×2560 | 50.000 | 194.40 s | 9,720 | no drops |
 | XAVC HS 4K 50p | 3840×2560 | 50.000 | **706.08 s** | **35,304** | no drops, no thermal stop |
+| XAVC HS 4K 50p | 3840×2560 | 50.000 | 17.76 s | 888 | re-check after a cold boot: no drops, clean decode |
 
-`cropdetect` on all four: `3840:2560:0:0`. FOV (25p vs 50p, AVC and HS): best scale **1.0000** — no crop.
-The full 3968-row sensor window works at 50p on this body, so the optional N99/N96 fallback was **not** needed.
+`cropdetect` on every clip: `3840:2560:0:0`. FOV (25p vs 50p, AVC and HS): best scale **1.0000** — no crop.
+The full 3968-row sensor window works at 50p on this body, so **no smaller-window fallback is needed**.
 
+## Two kit steps that do not work on 6.00 (measured 2026-11-28)
+
+- **N99 / N96 (`libJit_fx30_L5_50p_sensor.so`, mode `0x830`, 5612×3732 window): removed from this branch.**
+  On a 6.00 body the step stops with `a stored record was not found where the pointers lead; nothing is written`.
+  A read-only `dump` shows the body's stored records are `0x820 / 0x880 / 0x890 / 0x8c0 / 0x8d0` — **there is no
+  `0x830` record**, and no `340/4230`-style 50p timing record either; the set is 25p/23.98p only. The payload's
+  record model (`D-50p-rec-830.json`) is emulator-derived — its own `self_check_0x820` is `false` for both NTSC and PAL —
+  so it was never validated against a real dump. Reproduced twice (stock body + N102 applied; and after a quick power cycle).
+  **50p does not need a new stored record on this body**: the chain above leaves every record untouched.
+  If the smaller window is still wanted, the window values live in the `window` (`0xe027d6`) and `sensor_window`
+  (`0x01038d58`) sites, so a no-record variant of the sensor step is the thing to build.
+- **S16 (`libJit_fx30_S16.so`) refuses on 6.00**: `the bytes at 0x001e3024 are not as expected`. That is 6.01
+  addressing; use the **6.00 rebuild N97** (`libJit_fx30_N16.so`) for the same `lcd32dsq_fx30_v1` screen design.
 
 ## Credits
 
