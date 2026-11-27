@@ -42,7 +42,7 @@ N102 -> L5 -> L16 -> N97
 
 Do **not** apply the old N98 before N102; N102 covers all 101 av-cam sites N98 covered.
 
-Measured on the body above, one session, four clips (details and the full "Please send back" list in
+Measured on the body above, four clips (details and the full "Please send back" list in
 [issue #13](https://github.com/ArcaneLantern/fx30-open-gate-test/issues/13)):
 
 | Format | Size | fps | Duration | Frames | Result |
