@@ -55,6 +55,14 @@ Measured on the body above, four clips (details and the full "Please send back" 
 `cropdetect` on all four: `3840:2560:0:0`. FOV (25p vs 50p, AVC and HS): best scale **1.0000** — no crop.
 The full 3968-row sensor window works at 50p on this body, so the optional N99/N96 fallback was **not** needed.
 
+
+## Credits
+
+- **ArcaneLantern** — the kit, its designs and guards, the runner, and the A6700 port that carried the p50 group.
+- **@resaviews** — the A6700 open-gate port (window, address map, **50p mode**, 5.76K, playback fix). The p50 descriptor
+  group in `expected_mp_ogfile50p_fx30_relink.h` is **his** work, mapped to the FX30 by −0xf90 here; it is not my design.
+- **Kwitglasses** (issue #4) — the 6.00 relink approach and the `expected_mp_ogfile2560_hs_s_fx30_relink.h` pattern.
+
 ## Caveats
 
 - 6.00 only. On 6.01 the kit's own L19 step is the right one; these libraries will refuse (guard).
