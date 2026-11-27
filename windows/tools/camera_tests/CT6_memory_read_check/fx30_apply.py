@@ -5,7 +5,20 @@
   python fx30_apply.py switch-to-b | switch-to-a  [--dry-run]         (A/B test of the sensor step, in the same power-on)
   python fx30_apply.py screen | screen-putback  [--dry-run]
   python fx30_apply.py playback | playback-putback  [--dry-run]      (optional, NOT RUN ON ANY CAMERA: in-camera playback)
+  python fx30_apply.py flash | flash-putback | flash-check  [--dry-run]   (NOT RUN ON ANY CAMERA: an external flash with the electronic shutter)
   (apply and screen take --no-movie-session to leave out the closing read-only session)
+
+THE EXTERNAL-FLASH TEST (session HS1, 2026-11-27; modding/FX30_FLASH_ENABLE.md; independent of the open-gate steps):
+  flash          one step, F19 (design fx30flash_v2), in the main application's memory: the shutter-type rules take the ZV-E1's path (two
+                 pointer slots: with the electronic shutter the camera calls 'invalid' instead of 'electronic', which is what forces Flash
+                 Mode off), the twelve flash menu flags of the FX30's class are set as the FX3's, and three key codes of libObj.so's copy of
+                 the shoe table map a Sony flash to the FX3's codes instead of 'not supported'. The rule change takes effect at the next
+                 switch to Movie and back to P/A/S/M (emulated: build/emu_exclusion_fx30.py); the script says so.
+  flash-putback  F20: puts those 17 sites back (the flash ban returns at the next switch to Movie and back).
+  flash-check    F18: READ-ONLY, what those sites hold now (READY / APPLIED / NOT READY), the shoe table's state and the shoe object's
+                 first bytes, for the report. Run it once with the flash on the camera and switched on.
+  They need a saved read-only check of this kit (check_readonly or dump_info) whose identity lines are all SAME; they do not need the
+  open-gate sites to be stock.
 
 The FX30 port (2026-11-26) of the open-gate state that works on the A7 IV, A7S III and FX3: a true 3840x2560 file of the 3:2 area of
 the sensor, shown at 3:2 on the rear screen. How it is built (modding/FX30_PORT.md):
@@ -65,7 +78,9 @@ import fx30_run  # noqa: E402
 
 FIRMWARE = fx30_run.FIRMWARE
 STEPS = {"apply": ("L5", "L16", "L19"), "putback": ("L20", "L17", "L6"), "screen": ("S16",), "screen-putback": ("S17",),
-         "playback": ("P29",), "playback-putback": ("P30",), "switch-to-b": ("L6", "B5"), "switch-to-a": ("B6", "L5")}
+         "playback": ("P29",), "playback-putback": ("P30",), "switch-to-b": ("L6", "B5"), "switch-to-a": ("B6", "L5"),
+         "flash": ("F19",), "flash-putback": ("F20",), "flash-check": ("F18",)}
+FLASH = ("flash", "flash-putback", "flash-check")
 VARIANT_B = {"L5": "B5", "L6": "B6"}             # --variant-b: the sensor step and its put back
 # putback: a sensor put back that wrote nothing because the other variant is in memory is followed by the other variant's put back
 OTHER_PUTBACK = {"L6": "B6", "B6": "L6"}
@@ -101,6 +116,18 @@ def last_check():
         if res.get("which") in ("check", "dump") and f:       # a dump makes every check the check makes, and gives the same verdict
             current = "fx30read_v2 " in f.get("header", "") and "ILME-FX30 6.01" in f.get("header", "")
             return folder.name, current and bool(f.get("ready")) and not f.get("identity_differs")
+    return None
+
+
+def last_identity():
+    """For the flash steps: the newest saved read-only check or dump of this kit that fetched a result: (folder name, its identity lines all
+    SAME?) or None. The open-gate sites may be stock or applied: the flash step's own library checks every byte it relies on."""
+    for folder, man in sessions():
+        res = man.get("results", {})
+        f = (res.get("ct6", {}).get("result") or {}).get("s3")
+        if res.get("which") in ("check", "dump") and f:
+            current = "fx30read_v2 " in f.get("header", "") and "ILME-FX30 6.01" in f.get("header", "")
+            return folder.name, current and not f.get("identity_differs") and bool(f.get("identity_same"))
     return None
 
 
@@ -253,13 +280,31 @@ def main():
         say()
         say("Dry run only: nothing was sent to any device.")
         return
-    chk = last_check()
-    if applying and (chk is None or not chk[1]):
-        raise SystemExit("The newest saved read-only check of this kit %s. Run check_readonly first and get VERDICT READY. Nothing was sent."
-                         % ("does not exist" if chk is None else "(%s) does not say READY" % chk[0]))
+    if a.what in FLASH:
+        ident = last_identity()
+        if ident is None or not ident[1]:
+            raise SystemExit("The newest saved read-only check of this kit %s. Run check_readonly first: its identity lines must all say SAME. "
+                             "Nothing was sent." % ("does not exist" if ident is None else "(%s) does not show the 6.01 software" % ident[0]))
+    else:
+        chk = last_check()
+        if applying and (chk is None or not chk[1]):
+            raise SystemExit("The newest saved read-only check of this kit %s. Run check_readonly first and get VERDICT READY. Nothing was sent."
+                             % ("does not exist" if chk is None else "(%s) does not say READY" % chk[0]))
     say()
-    say("This WRITES into the running camera's memory (not its firmware, not its settings).")
-    if a.what in ("playback", "playback-putback"):
+    if a.what == "flash-check":
+        say("This only READS the camera's memory: nothing is written.")
+        say("Before you go on: a charged battery and %s. To read the shoe table with a flash attached: fit the flash and switch it on first." % STILL)
+    else:
+        say("This WRITES into the running camera's memory (not its firmware, not its settings).")
+    if a.what in ("flash", "flash-putback"):
+        say("The external-flash step is NEW and has NOT RUN ON ANY CAMERA. It changes 17 places in the main application's memory: two pointers of")
+        say("  the shutter-type rules, twelve menu flags and three entries of the shoe table. Its library checks every byte around them against")
+        say("  the 6.01 files and the whole shoe table first; if anything is not as expected it writes nothing. It does not touch the open-gate")
+        say("  steps, the settings or the firmware. A cold boot (battery out for 10 seconds) returns the camera to stock.")
+        say("Before you go on: a charged battery, %s, and the flash NOT attached (or switched off)." % STILL)
+    elif a.what == "flash-check":
+        pass
+    elif a.what in ("playback", "playback-putback"):
         say("The playback step is NEW and has NOT RUN ON ANY CAMERA. It changes four instructions of av-cam.bin (the kernel's AV code) and one")
         say("  word of its decode table. Its library checks the whole code page against the firmware file, reads the processors' cache type,")
         say("  and refuses unless it can make every processor fetch the new instructions; it then writes the instructions first and the")
@@ -274,9 +319,12 @@ def main():
         say("  window registers. No stock movie mode reads this many rows, so the sensor's answer is not known. Possible outcomes are in README.md.")
     else:
         say("It has to follow an apply of this kit.")
-    say("A cold boot (battery out for 10 seconds) returns the camera to stock. On the A7S III the power switch did too:")
-    say("so KEEP THE CAMERA SWITCHED ON from now until the script says it is finished.")
-    if a.what in ("playback", "playback-putback"):
+    if a.what != "flash-check":
+        say("A cold boot (battery out for 10 seconds) returns the camera to stock. On the A7S III the power switch did too:")
+        say("so KEEP THE CAMERA SWITCHED ON from now until the script says it is finished.")
+    if a.what in FLASH:
+        pass
+    elif a.what in ("playback", "playback-putback"):
         say("Before you go on: a charged battery, %s, and the camera NOT in playback (no clip open)." % STILL)
     elif a.what == "apply":
         say("Before you go on: File Format already set to XAVC S 4K at 24p (25p on a PAL camera), %s, a charged battery," % STILL)
@@ -287,7 +335,7 @@ def main():
         say("Before you go on: a charged battery, and %s." % STILL)
     if input("Firmware version in the camera's menu: ").strip() != FIRMWARE:
         raise SystemExit("Not %s. Nothing was sent." % FIRMWARE)
-    if input("Type YES to write to the camera's memory: ").strip() != "YES":
+    if a.what != "flash-check" and input("Type YES to write to the camera's memory: ").strip() != "YES":
         raise SystemExit("Not confirmed. Nothing was sent.")
     for n, k in enumerate(steps, 1):
         if not wait_for_drive(n == 1):
@@ -323,6 +371,29 @@ def main():
             raise SystemExit(1)
     say()
     say("All %d steps passed (%s)." % (len(steps), a.what))
+    if a.what == "flash-check":
+        which, f = step_outcome()
+        say("The external-flash step's sites: %s." % (f or {}).get("outcome", "not read"))
+        for ln in (f or {}).get("flash_lines", []):
+            if not ln.startswith("instance bytes"):
+                say("  " + ln.strip())
+        say("Please send the newest folder in camera_private with your report (it holds the whole result, with the shoe object's first bytes).")
+    elif a.what == "flash":
+        say("The external-flash step is in the camera's memory. Now, in this order (and write down what each does):")
+        say("  1. Unplug USB.")
+        say("  2. Turn the MODE dial / press MODE: choose Movie, wait two seconds, then choose Manual Exposure (M) again. The camera only")
+        say("     re-checks the shutter type when it leaves the still modes; without this Flash Mode stays greyed out.")
+        say("  3. Fit a Sony flash on the shoe (a Multi Interface flash such as an HVL-F28RM/F46RM/F60RM) and switch it on; if it was already")
+        say("     on, switch it off and on again. Set the FLASH to MANUAL power, low (1/16 or 1/32).")
+        say("  4. MENU > Exposure/Color > Flash > Flash Mode: choose Fill-flash. Is the Flash menu there at all, and is Flash Mode greyed out?")
+        say("  5. Shutter 1/8 s (not faster), ISO 400 or less, lens cap off, a wall or a card at 1-2 m. Take one still.")
+        say("     Did the flash fire? Is the frame lit evenly, lit only in a band, or not lit?")
+        say("  6. Then 1/15 s and 1/30 s, one still each: where does a dark band appear? (expected near 1/15 s or 1/30 s: the sensor's read-out)")
+        say("  7. Plug USB in again (a still mode) and run flash_check once, with the flash on the camera and switched on.")
+        say("Do not use TTL, wireless or high-speed sync for this test. If the camera stops or freezes: battery out for 10 seconds (that also")
+        say("returns it to stock). To return to stock without that: flash_putback, then Movie and back to a still mode.")
+    elif a.what == "flash-putback":
+        say("The external-flash step is put back. The flash ban returns at the next switch to Movie and back to a still mode (or a cold boot).")
     if "B5" in steps:
         say("The sensor step is VARIANT B (first phase-detect row 145, read-out length 2020). Please say so in your report.")
     elif switching:

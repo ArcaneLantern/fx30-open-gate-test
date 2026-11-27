@@ -49,6 +49,9 @@ The cause, read from a tester's dump and confirmed in the firmware: the FX30 set
 | `screen_putback.cmd` | Puts the screen step back | Yes: memory only |
 | `playback_fix_apply.cmd` | **Optional, not run on any camera** (the FX3's own was not run either): lets the camera play 3840 × 2560 clips back (see "While it is applied") | **Yes: memory only** |
 | `playback_fix_putback.cmd` | Puts the playback step back | Yes: memory only |
+| `flash_check.cmd` | **New, external-flash test:** reads what the flash step's 17 places hold now and the state of the camera's shoe table (see "External flash with the electronic shutter") | No |
+| `flash_apply.cmd` | **New, not run on any camera:** lets the FX30 use a Sony shoe flash with its electronic shutter. Independent of open gate | **Yes: memory only** |
+| `flash_putback.cmd` | Puts the flash step back | Yes: memory only |
 
 Nothing in this kit writes to the camera's firmware or to its settings.
 
@@ -77,7 +80,7 @@ Each live run asks for your Mac password: macOS keeps its own driver on the came
 
 If macOS refuses to open a .command file ("unidentified developer" or "could not verify"), open System Settings > Privacy & Security, scroll down and click "Open Anyway". Or open Terminal, type `bash` and a space, drag the .command file into the window, and press Return.
 
-## Android (app 0.3; v1's app ran the steps on a phone, v2's has not run yet)
+## Android (app 0.4; v1's app ran the steps on a phone, v2's has not run yet)
 
 `android/FX30-OpenGate.apk` runs this kit from a phone connected to the camera by USB-C (or an OTG adapter). It carries exactly the files in `windows/tools` of this commit and runs them unchanged; only the USB access, the dialogs and the folder for the results are the phone's.
 
@@ -89,7 +92,7 @@ If macOS refuses to open a .command file ("unidentified developer" or "could not
 6. **Stop waiting** ends a wait for the camera. It never interrupts a step that is talking to the camera.
 7. Afterwards, **Export logs** writes a zip to `Download/FX30-OpenGate/` on the phone: send that zip back.
 
-**Self-test** and **Dry run** need no camera and send nothing.
+**Self-test** and **Dry run** need no camera and send nothing. The row **Flash check (read-only) / Flash test (untested) / Flash put back** runs the external-flash test below.
 
 ## The read-only steps (check and debug dump)
 
@@ -210,6 +213,46 @@ I do not know that B is right; it does not follow the firmware's own rule. It is
 
 **The optional playback step** (`playback_fix_apply.cmd`, after an apply or on its own; NOT RUN ON ANY CAMERA): it makes the camera open playback with the A7 IV's 7690 × 4320 channel, which the A7 IV uses to play the same clips. It changes four instructions and one table word of the camera's AV program; its library refuses unless the processors' caches can be made to fetch the new instructions. Then: open an ordinary 16:9 clip first, then ONE open-gate clip. If it says "Unable to display", do not try again: leave playback and report. `playback_fix_putback.cmd` or a battery pull removes it.
 
+## External flash with the electronic shutter (new test, 2026-11-27, NOT RUN ON ANY CAMERA)
+
+The FX30 has no mechanical shutter, and Sony does not let it use a shoe flash. The ZV-E1, which also has only an electronic (rolling) shutter, does: Sony gives it a flash sync speed of 1/30 s. The FX30's firmware turned out to have the whole flash system, not empty stubs. Flash is kept off by three pieces of data, and this step changes all three in the camera's memory:
+
+1. **The rules.** While the shutter is electronic, the camera forces Flash Mode to Off and greys it out. The step makes the FX30 take the ZV-E1's path there: two pointers in the rule tables change.
+2. **The menus.** The FX30 hides every flash menu item for its own model. The step shows the same items the FX3 build shows: Flash Mode and its choices, Flash Comp., Exp.comp.set, Red Eye Reduction and External Flash Set., which is 12 flags. Wireless Flash stays hidden and off.
+3. **The shoe table.** The FX30's copy of the table that turns an accessory's shoe ID into an input reports a Sony flash as "not supported". The step maps the three flash IDs as the FX3 does: Multi Interface flash, older flash, and the radio commander.
+
+The image processor's own flash timing needs no change as far as the firmware shows. It times the flash from the sensor's exposure, and it is the same code in bodies that allow flash with the electronic shutter (A1, ZV-E1) and bodies that do not (A7 IV, A6700). Before any of this was built, the camera's own rule engine was run in emulation with the change. It frees Flash Mode exactly as the ZV-E1 does, after one switch to Movie and back. The step's three libraries were run in emulation against a model of the camera's memory, in 33 cases.
+
+**Two things the firmware cannot tell:**
+
+- whether the FX30's shoe has the flash contacts wired;
+- whether the flash fires inside the exposure.
+
+**Limits, from the sensor's read-out time:** with a rolling shutter every row must be exposing when the flash fires, so the shutter has to stay open longer than the read-out. Expect full-frame flash only at about **1/15 s or slower** (perhaps 1/30 s; the test is meant to find out). Faster speeds give a lit band. No high-speed sync, no wireless flash.
+
+**How to test** (separate from open gate; it can be applied on its own or together with it):
+
+1. Run `check_readonly.cmd` first, if there is no check from this power-on. Its identity lines must say SAME.
+2. Set STILL (Manual Exposure is best). Take the flash **off** the camera, or switch it off. Run `flash_apply.cmd`.
+3. Unplug USB. **Press MODE, choose Movie, wait two seconds, then choose Manual Exposure again.** The camera only re-checks the shutter type when it leaves the still modes; without this, Flash Mode stays greyed out.
+4. Fit a Sony Multi Interface flash (for example HVL-F28RM, F46RM, F60RM) and switch it on. Set the **flash** to **manual power**, low (1/16 or 1/32). Do not use TTL, wireless or high-speed sync.
+5. MENU > Exposure/Color > Flash > Flash Mode: choose **Fill-flash**. Note whether the Flash menu is there and whether Flash Mode is greyed out.
+6. Shutter **1/8 s**, ISO 400 or lower, lens cap off, a wall or card at 1 to 2 m. Take one still. Did the flash fire? Is the frame lit evenly, lit in a band, or not lit?
+7. Then one still each at 1/15 s and 1/30 s: where does a dark band start?
+8. With the flash still on the camera and switched on, plug USB in (a still mode) and run `flash_check.cmd`. Send the newest folders in `windows/camera_private` with your answers and the stills.
+
+**What each outcome means:**
+
+| What you see | What it tells us |
+|---|---|
+| The Flash menu is not there | The menu part did not take; send `flash_check` |
+| Flash Mode greyed out even after Movie and back | The rule part did not take; send `flash_check` and say whether you went to Movie and back |
+| Flash Mode usable, but the camera says no flash is attached, or the flash's ready lamp never reaches the camera | The shoe may not have the flash contacts wired (hardware) |
+| The flash fires, but the frame is dark | The trigger time does not fall inside the exposure |
+| Lit at 1/8 s, a band at 1/15 s or 1/30 s | Expected: that is the read-out limit; tell us where it starts |
+
+**If anything goes wrong:** if the camera shuts down or freezes when the flash is attached or switched on, take the flash off and pull the battery for 10 seconds. That returns everything to stock. `flash_putback.cmd` also puts the step back; the flash ban returns at the next switch to Movie and back. The step writes nothing unless every byte around its 17 places, and the whole shoe table, are exactly as in FX30 6.01.
+
 ## Questions from the first runs
 
 - **Do PAL and NTSC need different values?** No. The sensor registers and table values are the same. Only some time values inside the stored mode records differ, and the sensor step detects which set the camera holds and writes the matching one.
@@ -232,7 +275,8 @@ Every stop prints a reason and "Nothing was sent" or what was sent. Please send 
 - `windows/`: the launchers, `setup.cmd`, and `tools/`:
   - the scripts, the pinned program files and their source;
   - the patch designs of every step;
-  - the builders and emulations of the designs (`tools/modding/fx30`).
+  - the builders and emulations of the designs (`tools/modding/fx30`);
+  - the external-flash step: its own helper source `tools/camera_tests/CT6_memory_read_check/helper_fx30/fx30flash.c` (libraries F18 check, F19 apply, F20 put back), its design `tools/modding/designs/fx30flash_v2.json`, the emulation of the camera's rule engine (`tools/modding/fx30/emu_exclusion_fx30.py`) and of the three libraries (`helper_fx30/emu_fx30_flash.py`).
 - `macos/`: `setup.command` and one `.command` launcher per Windows launcher; they run `windows/tools`.
 - `android/FX30-OpenGate.apk`: the phone app, carrying `windows/tools` as published here.
 - `PORT_NOTES.md`: how the open gate was built for the FX30, what was checked and how, the address map, and what is not known.

@@ -72,9 +72,18 @@ WRITE_STEPS = {
     # decode channel (avdec8k_fx30_v1: four code words and one table word of av-cam.bin, readcheck.c levels 29 / 30, the FX3 kit's step moved).
     "P29": ("libJit_fx30_P29.so", "11717457fb0a22c4a410b3167862310f144b7eb12a290dffca2c2803e33b7aad", "apply the playback decoder avdec8k_fx30_v1 (the A7 IV's 7690x4320 decode channel and its memory: 4 code words and 1 table word of av-cam.bin)"),
     "P30": ("libJit_fx30_P30.so", "811589289151f5c0a816bb10144b55aebd6416e3c7dd428e79eaad95817f0d31", "put back the playback decoder avdec8k_fx30_v1"),
+    # The external-flash step (session HS1, 2026-11-27; NOT RUN ON A CAMERA): design fx30flash_v2 (modding/FX30_FLASH_ENABLE.md), its own helper
+    # helper_fx30/fx30flash.c (build_fx30_flash.sh). In the main application's memory: two pointer slots of the shutter-type rules (the ZV-E1's
+    # 'invalid' path instead of 'electronic'), the 12 flash menu flags of class LAX, and three key codes of libObj.so's heap copy of the shoe
+    # table. F18 only reads (READY / APPLIED / NOT READY); it runs through the write path because it reads the process's memory the same way.
+    "F18": ("libJit_fx30_F18.so", "c2f366016e744a4645d61ed2047ef2b5a7ba3932d9df485e6ef909be2a267f7e",
+            "READ-ONLY check of the external-flash step fx30flash_v2 (the rule slots, the menu flags, libObj.so's shoe table; nothing is written)"),
+    "F19": ("libJit_fx30_F19.so", "8bca805ffcc9ff5f0d0d1917a80313a8add4419d93e319f1c9cdb9ef3aae4c7c",
+            "apply the external-flash step fx30flash_v2 (3 shoe-table words, 12 menu flags, 2 rule slots in the main application's memory)"),
+    "F20": ("libJit_fx30_F20.so", "edc587cdb3d6d49e9225aa26abd92889d4591576a846238d93ad152fdac81db0", "put back the external-flash step fx30flash_v2"),
 }
 PINS.update({k: v[:2] for k, v in WRITE_STEPS.items()})
-LEVELS.update({k: {"L": 200, "S": 300, "N": 500, "P": 600, "B": 700}[k[0]] + int(k[1:]) for k in WRITE_STEPS})
+LEVELS.update({k: {"L": 200, "S": 300, "N": 500, "P": 600, "B": 700, "F": 800}[k[0]] + int(k[1:]) for k in WRITE_STEPS})
 WHICH = "check"
 DESIGN_MODES = ("0x820", "0x880", "0x890", "0x8c0", "0x8d0")
 # Libraries this kit published before and no longer runs (kit v1, 2026-11-26). With PINS they are the files a run may delete from the camera's
@@ -112,15 +121,18 @@ def write_result(data):
     text = data.decode("utf8", "replace")
     lines = text.split("\n")
     pick = lambda start: next((ln for ln in lines if ln.startswith(start)), None)
-    outcome = ("UNDO INCOMPLETE" if pick("!! UNDO INCOMPLETE") or pick("UNDO INCOMPLETE") else "DONE" if pick("DONE: ") else "NOTHING TO DO" if pick("NOTHING TO DO") else
+    verdict = pick("== level 18 verdict: ")              # F18, the flash step's read-only check: READY, APPLIED or NOT READY
+    outcome = (verdict[len("== level 18 verdict: "):].split(":")[0] if verdict else
+               "UNDO INCOMPLETE" if pick("!! UNDO INCOMPLETE") or pick("UNDO INCOMPLETE") else "DONE" if pick("DONE: ") else "NOTHING TO DO" if pick("NOTHING TO DO") else
                "NOT DONE (everything put back)" if pick("NOT DONE: ") else "NOTHING WRITTEN" if any("nothing is written" in ln for ln in lines) else "UNKNOWN")
     problems, notes = split_problems(lines)
     variant = pick("the stored records are the ")
     return {"bytes": len(data), "sha256": hashlib.sha256(data).hexdigest(), "header_ok": lines[0].startswith("readcheck 1 level %s" % WHICH[1:]),
             "euid": "see the result", "sections": [ln for ln in lines if ln.startswith("== ")], "problems": len(problems),
             "complete": any(ln.startswith("== done") for ln in lines[-3:]),
-            "s3": {"step": WHICH, "what": WRITE_STEPS[WHICH][2], "outcome": outcome, "ok": outcome in ("DONE", "NOTHING TO DO"),
-                   "outcome_line": pick("DONE: ") or pick("NOTHING TO DO") or pick("NOT DONE: ") or pick("!! UNDO INCOMPLETE") or pick("UNDO INCOMPLETE"),
+            "s3": {"step": WHICH, "what": WRITE_STEPS[WHICH][2], "outcome": outcome, "ok": outcome in ("DONE", "NOTHING TO DO", "READY", "APPLIED"),
+                   "outcome_line": verdict or pick("DONE: ") or pick("NOTHING TO DO") or pick("NOT DONE: ") or pick("!! UNDO INCOMPLETE") or pick("UNDO INCOMPLETE"),
+                   "flash_lines": [ln for ln in lines if ln.startswith(("InfraHotshoe instance", "table ", "  shoe entry", "instance bytes"))] if WHICH[0] == "F" else [],
                    "timing_variant": variant, "problem_lines": problems, "notes": notes}}
 
 
@@ -386,8 +398,10 @@ def known_answer(session, camera):
 
 def run_helper(data):
     """What loading the uploaded bytes gives on a model FX30: the real AArch64 code in Unicorn if it is installed, else a canned text."""
-    if WHICH in WRITE_STEPS:                        # the write libraries are emulated by helper_fx30/emu_fx30_write.py; here only the session flow is simulated
-        text = "readcheck 1 level %s\neuid 0\n== level %s\nDONE: every site holds the target bytes (canned)\n== done, bytes written before this line: 0\n" % (WHICH[1:], WHICH[1:])
+    if WHICH in WRITE_STEPS:                        # the write libraries are emulated by helper_fx30/emu_fx30_write.py (and emu_fx30_flash.py); here only the session flow
+        last = ("== level 18 verdict: READY: every guard is as in the file and every site holds the stock bytes (canned)" if WHICH == "F18"
+                else "DONE: every site holds the target bytes (canned)")
+        text = "readcheck 1 level %s\neuid 0\n== level %s\n%s\n== done, bytes written before this line: 0\n" % (WHICH[1:], WHICH[1:], last)
         return text.encode(), "canned"
     try:
         import emu_fx30
@@ -514,6 +528,7 @@ def report(session, facts, which):
         if f.get("timing_variant"):
             lines.append(f["timing_variant"])
         lines += ["  " + ln for ln in f["problem_lines"]]
+        lines += [ln if ln.startswith("  ") else "  " + ln for ln in f.get("flash_lines", []) if not ln.startswith("instance bytes")]
         if f.get("notes"):
             lines.append("notes (not faults: %d lines such as a directory under /proc/driver/pcie that cannot be read as a file)" % len(f["notes"]))
         session.save_bytes("fx30_report.txt", ("\n".join(lines) + "\n").encode())

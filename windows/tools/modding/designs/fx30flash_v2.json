@@ -1,0 +1,772 @@
+{
+ "build": "fx30_601",
+ "generated_by": "build/build_fx30_flash.py",
+ "library": "appFw.so",
+ "artifact_sha256": {
+  "appFw.so": "72d9136ff0ace1a10220f3da354fb61b1b8aa61236b62f5a42d5cbe4afb24883",
+  "libObj.so": "b8c1cd83c697bc849534f11cd96a898ce2fc72b4b16256de155c07b307a455c6"
+ },
+ "menu_class_column": 7,
+ "design": "fx30flash_v2",
+ "title": "FX30 6.01: external flash with the electronic shutter, in memory: the ZV-E1's 'invalid' path for the shutter-type rules (two pointer slots), the flash menus of class LAX (12 flag bytes), and the three flash shoe IDs in libObj.so's heap copy of the shoe table (three words)",
+ "rule_slots": [
+  {
+   "kind": 0,
+   "va": "0x0",
+   "seg": 0,
+   "file_off": "0x0",
+   "label": "appFw.so ELF header",
+   "len": 16,
+   "pointer": false,
+   "stock": "7f454c46020101030000000000000000",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x32badd0",
+   "seg": 0,
+   "file_off": "0x32badd0",
+   "label": "the 'electronic' rule's kind-4 action",
+   "len": 12,
+   "pointer": false,
+   "stock": "04020000360c0000360c0000",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x3394358",
+   "seg": 0,
+   "file_off": "0x3394358",
+   "label": "the 'invalid' rule's kind-4 action",
+   "len": 12,
+   "pointer": false,
+   "stock": "04020000370c0000370c0000",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x3dad040",
+   "seg": 1,
+   "file_off": "0x3d9d040",
+   "label": "rule 0x3dad040: its slot table",
+   "len": 8,
+   "pointer": true,
+   "stock": [
+    "rel",
+    76270984
+   ],
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x3dad048",
+   "seg": 1,
+   "file_off": "0x3d9d048",
+   "label": "rule 0x3dad040: target 0xc36, source 0x29f",
+   "len": 8,
+   "pointer": false,
+   "stock": "360c00009f020000",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x3da8f50",
+   "seg": 1,
+   "file_off": "0x3d98f50",
+   "label": "rule 0x3da8f50: its slot table",
+   "len": 8,
+   "pointer": true,
+   "stock": [
+    "rel",
+    76262048
+   ],
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x3da8f58",
+   "seg": 1,
+   "file_off": "0x3d98f58",
+   "label": "rule 0x3da8f50: target 0xc37, source 0x29f",
+   "len": 8,
+   "pointer": false,
+   "stock": "370c00009f020000",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x48bcd88",
+   "seg": 1,
+   "file_off": "0x48acd88",
+   "label": "rule 0x3dad040, slot NOT_SET",
+   "len": 8,
+   "pointer": true,
+   "stock": [
+    "null",
+    0
+   ],
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x48bcd98",
+   "seg": 1,
+   "file_off": "0x48acd98",
+   "label": "rule 0x3dad040, slot PX_SHIFT_ON",
+   "len": 8,
+   "pointer": true,
+   "stock": [
+    "null",
+    0
+   ],
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x48baaa0",
+   "seg": 1,
+   "file_off": "0x48aaaa0",
+   "label": "rule 0x3da8f50, slot NOT_SET",
+   "len": 8,
+   "pointer": true,
+   "stock": [
+    "null",
+    0
+   ],
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x48baab0",
+   "seg": 1,
+   "file_off": "0x48aaab0",
+   "label": "rule 0x3da8f50, slot PX_SHIFT_ON",
+   "len": 8,
+   "pointer": true,
+   "stock": [
+    "rel",
+    65338736
+   ],
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x3def370",
+   "seg": 1,
+   "file_off": "0x3ddf370",
+   "label": "info 0x3def370: its action list",
+   "len": 8,
+   "pointer": true,
+   "stock": [
+    "rel",
+    53194192
+   ],
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x3def378",
+   "seg": 1,
+   "file_off": "0x3ddf378",
+   "label": "info 0x3def370: one action",
+   "len": 4,
+   "pointer": false,
+   "stock": "01000000",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x3e4fd70",
+   "seg": 1,
+   "file_off": "0x3e3fd70",
+   "label": "info 0x3e4fd70: its action list",
+   "len": 8,
+   "pointer": true,
+   "stock": [
+    "rel",
+    54084440
+   ],
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x3e4fd78",
+   "seg": 1,
+   "file_off": "0x3e3fd78",
+   "label": "info 0x3e4fd70: one action",
+   "len": 4,
+   "pointer": false,
+   "stock": "01000000",
+   "new": null
+  },
+  {
+   "kind": 1,
+   "va": "0x48bcd90",
+   "seg": 1,
+   "file_off": "0x48acd90",
+   "label": "rule 0x3dad040 ('electronic'), slot ELECTRONIC: -> info 0x3def370, becomes null",
+   "len": 8,
+   "pointer": true,
+   "stock": [
+    "rel",
+    64942960
+   ],
+   "new": [
+    "null",
+    0
+   ]
+  },
+  {
+   "kind": 1,
+   "va": "0x48baaa8",
+   "seg": 1,
+   "file_off": "0x48aaaa8",
+   "label": "rule 0x3da8f50 ('invalid'), slot ELECTRONIC: null, becomes -> info 0x3e4fd70",
+   "len": 8,
+   "pointer": true,
+   "stock": [
+    "null",
+    0
+   ],
+   "new": [
+    "rel",
+    65338736
+   ]
+  }
+ ],
+ "menu_flags": [
+  {
+   "kind": 0,
+   "va": "0x4323462",
+   "seg": 1,
+   "file_off": "0x4313462",
+   "label": "leaf 345 'Flash Mode': the 8 bytes before",
+   "len": 8,
+   "pointer": false,
+   "stock": "0101000101000101",
+   "new": null
+  },
+  {
+   "kind": 1,
+   "va": "0x432346a",
+   "seg": 1,
+   "file_off": "0x431346a",
+   "label": "leaf 345 'Flash Mode': column 7 (LAX) from column 6 (FX3)",
+   "len": 1,
+   "pointer": false,
+   "stock": "00",
+   "new": "01"
+  },
+  {
+   "kind": 0,
+   "va": "0x432346b",
+   "seg": 1,
+   "file_off": "0x431346b",
+   "label": "leaf 345 'Flash Mode': the 5 bytes after",
+   "len": 5,
+   "pointer": false,
+   "stock": "0107000000",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x43277ca",
+   "seg": 1,
+   "file_off": "0x43177ca",
+   "label": "choice 1461 'Flash Off' of Flash Mode: the 8 bytes before",
+   "len": 8,
+   "pointer": false,
+   "stock": "0001000101000101",
+   "new": null
+  },
+  {
+   "kind": 1,
+   "va": "0x43277d2",
+   "seg": 1,
+   "file_off": "0x43177d2",
+   "label": "choice 1461 'Flash Off' of Flash Mode: column 7 (LAX) from column 6 (FX3)",
+   "len": 1,
+   "pointer": false,
+   "stock": "00",
+   "new": "01"
+  },
+  {
+   "kind": 0,
+   "va": "0x43277d3",
+   "seg": 1,
+   "file_off": "0x43177d3",
+   "label": "choice 1461 'Flash Off' of Flash Mode: the 8 bytes after",
+   "len": 8,
+   "pointer": false,
+   "stock": "014b020002750900",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x4327862",
+   "seg": 1,
+   "file_off": "0x4317862",
+   "label": "choice 1462 'Autoflash' of Flash Mode: the 8 bytes before",
+   "len": 8,
+   "pointer": false,
+   "stock": "0001000101000101",
+   "new": null
+  },
+  {
+   "kind": 1,
+   "va": "0x432786a",
+   "seg": 1,
+   "file_off": "0x431786a",
+   "label": "choice 1462 'Autoflash' of Flash Mode: column 7 (LAX) from column 6 (FX3)",
+   "len": 1,
+   "pointer": false,
+   "stock": "00",
+   "new": "01"
+  },
+  {
+   "kind": 0,
+   "va": "0x432786b",
+   "seg": 1,
+   "file_off": "0x431786b",
+   "label": "choice 1462 'Autoflash' of Flash Mode: the 8 bytes after",
+   "len": 8,
+   "pointer": false,
+   "stock": "014c020002730900",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x43278fa",
+   "seg": 1,
+   "file_off": "0x43178fa",
+   "label": "choice 1463 'Fill-flash' of Flash Mode: the 8 bytes before",
+   "len": 8,
+   "pointer": false,
+   "stock": "0001000101000101",
+   "new": null
+  },
+  {
+   "kind": 1,
+   "va": "0x4327902",
+   "seg": 1,
+   "file_off": "0x4317902",
+   "label": "choice 1463 'Fill-flash' of Flash Mode: column 7 (LAX) from column 6 (FX3)",
+   "len": 1,
+   "pointer": false,
+   "stock": "00",
+   "new": "01"
+  },
+  {
+   "kind": 0,
+   "va": "0x4327903",
+   "seg": 1,
+   "file_off": "0x4317903",
+   "label": "choice 1463 'Fill-flash' of Flash Mode: the 8 bytes after",
+   "len": 8,
+   "pointer": false,
+   "stock": "014d020002740900",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x4327992",
+   "seg": 1,
+   "file_off": "0x4317992",
+   "label": "choice 1464 'Slow Sync.' of Flash Mode: the 8 bytes before",
+   "len": 8,
+   "pointer": false,
+   "stock": "0001000101000101",
+   "new": null
+  },
+  {
+   "kind": 1,
+   "va": "0x432799a",
+   "seg": 1,
+   "file_off": "0x431799a",
+   "label": "choice 1464 'Slow Sync.' of Flash Mode: column 7 (LAX) from column 6 (FX3)",
+   "len": 1,
+   "pointer": false,
+   "stock": "00",
+   "new": "01"
+  },
+  {
+   "kind": 0,
+   "va": "0x432799b",
+   "seg": 1,
+   "file_off": "0x431799b",
+   "label": "choice 1464 'Slow Sync.' of Flash Mode: the 8 bytes after",
+   "len": 8,
+   "pointer": false,
+   "stock": "014e020002770900",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x4327ac2",
+   "seg": 1,
+   "file_off": "0x4317ac2",
+   "label": "choice 1466 'Rear Sync.' of Flash Mode: the 8 bytes before",
+   "len": 8,
+   "pointer": false,
+   "stock": "0001000101000101",
+   "new": null
+  },
+  {
+   "kind": 1,
+   "va": "0x4327aca",
+   "seg": 1,
+   "file_off": "0x4317aca",
+   "label": "choice 1466 'Rear Sync.' of Flash Mode: column 7 (LAX) from column 6 (FX3)",
+   "len": 1,
+   "pointer": false,
+   "stock": "00",
+   "new": "01"
+  },
+  {
+   "kind": 0,
+   "va": "0x4327acb",
+   "seg": 1,
+   "file_off": "0x4317acb",
+   "label": "choice 1466 'Rear Sync.' of Flash Mode: the 8 bytes after",
+   "len": 8,
+   "pointer": false,
+   "stock": "014f020002760900",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x436832a",
+   "seg": 1,
+   "file_off": "0x435832a",
+   "label": "leaf 346 'Flash Comp.': the 8 bytes before",
+   "len": 8,
+   "pointer": false,
+   "stock": "0101000101000101",
+   "new": null
+  },
+  {
+   "kind": 1,
+   "va": "0x4368332",
+   "seg": 1,
+   "file_off": "0x4358332",
+   "label": "leaf 346 'Flash Comp.': column 7 (LAX) from column 6 (FX3)",
+   "len": 1,
+   "pointer": false,
+   "stock": "00",
+   "new": "01"
+  },
+  {
+   "kind": 0,
+   "va": "0x4368333",
+   "seg": 1,
+   "file_off": "0x4358333",
+   "label": "leaf 346 'Flash Comp.': the 5 bytes after",
+   "len": 5,
+   "pointer": false,
+   "stock": "0119000000",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x432ddaa",
+   "seg": 1,
+   "file_off": "0x431ddaa",
+   "label": "leaf 347 'Exp.comp.set': the 8 bytes before",
+   "len": 8,
+   "pointer": false,
+   "stock": "0101000101000101",
+   "new": null
+  },
+  {
+   "kind": 1,
+   "va": "0x432ddb2",
+   "seg": 1,
+   "file_off": "0x431ddb2",
+   "label": "leaf 347 'Exp.comp.set': column 7 (LAX) from column 6 (FX3)",
+   "len": 1,
+   "pointer": false,
+   "stock": "00",
+   "new": "01"
+  },
+  {
+   "kind": 0,
+   "va": "0x432ddb3",
+   "seg": 1,
+   "file_off": "0x431ddb3",
+   "label": "leaf 347 'Exp.comp.set': the 5 bytes after",
+   "len": 5,
+   "pointer": false,
+   "stock": "0102000000",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x4355522",
+   "seg": 1,
+   "file_off": "0x4345522",
+   "label": "leaf 352 'Red Eye Reduction': the 8 bytes before",
+   "len": 8,
+   "pointer": false,
+   "stock": "0101000101000101",
+   "new": null
+  },
+  {
+   "kind": 1,
+   "va": "0x435552a",
+   "seg": 1,
+   "file_off": "0x434552a",
+   "label": "leaf 352 'Red Eye Reduction': column 7 (LAX) from column 6 (FX3)",
+   "len": 1,
+   "pointer": false,
+   "stock": "00",
+   "new": "01"
+  },
+  {
+   "kind": 0,
+   "va": "0x435552b",
+   "seg": 1,
+   "file_off": "0x434552b",
+   "label": "leaf 352 'Red Eye Reduction': the 5 bytes after",
+   "len": 5,
+   "pointer": false,
+   "stock": "0102000000",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x43e9a82",
+   "seg": 1,
+   "file_off": "0x43d9a82",
+   "label": "leaf 354 'Ext. Flash Firing Set.': the 8 bytes before",
+   "len": 8,
+   "pointer": false,
+   "stock": "0001000101000101",
+   "new": null
+  },
+  {
+   "kind": 1,
+   "va": "0x43e9a8a",
+   "seg": 1,
+   "file_off": "0x43d9a8a",
+   "label": "leaf 354 'Ext. Flash Firing Set.': column 7 (LAX) from column 6 (FX3)",
+   "len": 1,
+   "pointer": false,
+   "stock": "00",
+   "new": "01"
+  },
+  {
+   "kind": 0,
+   "va": "0x43e9a8b",
+   "seg": 1,
+   "file_off": "0x43d9a8b",
+   "label": "leaf 354 'Ext. Flash Firing Set.': the 8 bytes after",
+   "len": 8,
+   "pointer": false,
+   "stock": "0100000000000000",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x43e99e2",
+   "seg": 1,
+   "file_off": "0x43d99e2",
+   "label": "leaf 355 'Ext. Flash Cust. Set.': the 8 bytes before",
+   "len": 8,
+   "pointer": false,
+   "stock": "0001000101000101",
+   "new": null
+  },
+  {
+   "kind": 1,
+   "va": "0x43e99ea",
+   "seg": 1,
+   "file_off": "0x43d99ea",
+   "label": "leaf 355 'Ext. Flash Cust. Set.': column 7 (LAX) from column 6 (FX3)",
+   "len": 1,
+   "pointer": false,
+   "stock": "00",
+   "new": "01"
+  },
+  {
+   "kind": 0,
+   "va": "0x43e99eb",
+   "seg": 1,
+   "file_off": "0x43d99eb",
+   "label": "leaf 355 'Ext. Flash Cust. Set.': the 8 bytes after",
+   "len": 8,
+   "pointer": false,
+   "stock": "0100000000000000",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0x43a7228",
+   "seg": 1,
+   "file_off": "0x4397228",
+   "label": "page 353 'External Flash Set.': the 8 bytes before",
+   "len": 8,
+   "pointer": false,
+   "stock": "0001000101000101",
+   "new": null
+  },
+  {
+   "kind": 1,
+   "va": "0x43a7230",
+   "seg": 1,
+   "file_off": "0x4397230",
+   "label": "page 353 'External Flash Set.': column 7 (LAX) from column 6 (FX3)",
+   "len": 1,
+   "pointer": false,
+   "stock": "00",
+   "new": "01"
+  },
+  {
+   "kind": 0,
+   "va": "0x43a7231",
+   "seg": 1,
+   "file_off": "0x4397231",
+   "label": "page 353 'External Flash Set.': the 8 bytes after",
+   "len": 8,
+   "pointer": false,
+   "stock": "0100000200000005",
+   "new": null
+  }
+ ],
+ "libobj_guards": [
+  {
+   "kind": 0,
+   "va": "0x0",
+   "seg": 0,
+   "file_off": "0x0",
+   "label": "libObj.so ELF header",
+   "len": 16,
+   "pointer": false,
+   "stock": "7f454c46020101030000000000000000",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0xbc34c",
+   "seg": 0,
+   "file_off": "0xbc34c",
+   "label": "libObj.so KeyConfigAlloc (first 16 bytes)",
+   "len": 16,
+   "pointer": false,
+   "stock": "fd7bbca9830800d06360379185008052",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0xbc308",
+   "seg": 0,
+   "file_off": "0xbc308",
+   "label": "libObj.so the lookup by shoe ID (first 16 bytes)",
+   "len": 16,
+   "pointer": false,
+   "stock": "033040f9830100b4052840b9020080d2",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0xbea34",
+   "seg": 0,
+   "file_off": "0xbea34",
+   "label": "libObj.so infra_hotshoe_init (first 16 bytes)",
+   "len": 16,
+   "pointer": false,
+   "stock": "fd7bbfa9870800d0e76c069106008052",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0xbe958",
+   "seg": 0,
+   "file_off": "0xbe958",
+   "label": "libObj.so get-or-create (first 16 bytes)",
+   "len": 16,
+   "pointer": false,
+   "stock": "fd7bbda9fd030091f35301a9731000f0",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0xbd334",
+   "seg": 0,
+   "file_off": "0xbd334",
+   "label": "libObj.so infra_hotshoe_exit (first 16 bytes)",
+   "len": 16,
+   "pointer": false,
+   "stock": "fd7bbea9870800f0e7380691800f8052",
+   "new": null
+  },
+  {
+   "kind": 0,
+   "va": "0xbe464",
+   "seg": 0,
+   "file_off": "0xbe464",
+   "label": "libObj.so constructor (first 16 bytes)",
+   "len": 16,
+   "pointer": false,
+   "stock": "ffc301d1fd7b01a9fd430091f35302a9",
+   "new": null
+  }
+ ],
+ "libobj_chain": {
+  "inst_ptr": "0x2cde00",
+  "refcount": "0x2cddf8",
+  "vtable_point": "0x251c38",
+  "count_off": 40,
+  "array_off": "0x60",
+  "entry": 32,
+  "entries": 42
+ },
+ "shoe_table_heap_stock": "01010000ffffff0464000000000000000000000000000000000000000000000002010000ffffff0464000000000000000000000000000000000000000000000003010000ffffff0464000000000000000000000000000000000000000000000004010000ffffff0464000000000000000000000000000000000000000000000001020000ffffff0464000000000000000000000000000000000000000000000002020000ffffff0464000000000000000000000000000000000000000000000004020000ffffff0464000000000000000000000000000000000000000000000001030000ffffff0464000000000000000000000000000000000000000000000002030000ffffff0464000000000000000000000000000000000000000000000001040000ffffff0464000000000000000000000000000000000000000000000002040000ffffff0464000000000000000000000000000000000000000000000002050000ffffff0464000000000000000000000000000000000000000000000005050000ffffff0464000000000000000000000000000000000000000000000004040000ffffff0464000000000000000000000000000000000000000000000003040000ffffff04640000000000000000000000000000000000000000000000ffff0000ffffff04640000000000000000000000000000000000000000000000050405001100000464000000000000000000000000000000000000000000000005050500ffffff04640000000000000000000000000000000000000000000000040405001300000490010000000000000000000000000000000000000000000005050100ffffff0464000000000000000000000000000000000000000000000003020500ffffff0464000000000000000000000000000000000000000000000005020500ffffff0464000000000000000000000000000000000000000000000001020500ffffff0464000000000000000000000000000000000000000000000004020500ffffff0464000000000000000000000000000000000000000000000000000200ffffff0464000000000000000000000000000000000000000000000000000000ffffff0464000000000000000000000000000000000000000000000001000000ffffff0464000000000000000000000000000000000000000000000002000000ffffff0464000000000000000000000000000000000000000000000001040500ffffff0464000000000000000000000000000000000000000000000002040500ffffff04640000000000000000000000000000000000000000000000030405001f00000464000000000000000000000000000000000000000000000001050500200000046400000000000000000000000000000000000000000000000503050021000004640000007800000000000000000000000000000000000000010305002200000464000000000000000000000000000000000000000000000004030500ffffff0464000000000000000000000000000000000000000000000004050500ffffff0464000000000000000000000000000000000000000000000001050400ffffff0464000000000000000000000000000000000000000000000002050400ffffff04640000000000000000000000000000000000000000000000040401002700000400000000000000000000000000000000000000000000000004040300280000040000000000000000000000000000000000000000000000000505040029000004000000000000000000000000000000000000000000000000050403002a000004000000000000000000000000000000000000000000000000",
+ "shoe_sites": [
+  {
+   "entry": 17,
+   "shoe_id": "0x50505",
+   "heap_off": "0x224",
+   "setting_off": "0x230",
+   "stock": "ffffff04",
+   "new": "12000004",
+   "input": "II_STROBE"
+  },
+  {
+   "entry": 19,
+   "shoe_id": "0x10505",
+   "heap_off": "0x264",
+   "setting_off": "0x270",
+   "stock": "ffffff04",
+   "new": "14000004",
+   "input": "ALPHA_STROBE"
+  },
+  {
+   "entry": 35,
+   "shoe_id": "0x50504",
+   "heap_off": "0x464",
+   "setting_off": "0x470",
+   "stock": "ffffff04",
+   "new": "24000004",
+   "input": "II_STROBE_REMOTE_TRIGGER"
+  }
+ ],
+ "takes_effect": "rule slots: at the next change of the derived key, i.e. after the camera goes to Movie (or S&Q, or Auto) and back to P/A/S/M (build/emu_exclusion_fx30.py scenarios G-J); menu flags: at the next menu display; shoe IDs: when a flash is attached or switched on (the lookup reads the heap table each time)",
+ "write_order": "shoe table, menu flags, rule slots; put back in reverse",
+ "lasts": "until the camera's software restarts (battery out); libObj.so's table is not rebuilt while the camera runs (the instance is created at start-up and kept)",
+ "summary": {
+  "rule_sites": 2,
+  "rule_guards": 15,
+  "menu_sites": 12,
+  "menu_guards": 24,
+  "shoe_sites": 3,
+  "libobj_guards": 7,
+  "shoe_table_bytes": 1344
+ },
+ "not_covered": [
+  "whether the FX30's shoe hardware carries the flash lines (U100)",
+  "the coprocessor's start time for an electronic-shutter still (U102)",
+  "a shutter-speed limit with flash on (F1108, U106): set 1/8 s or slower by hand",
+  "wireless flash (stays forced off)"
+ ],
+ "status": "built as kit step F18/F19/F20 (helper_fx30/fx30flash.c); emulated; NOT RUN ON A CAMERA"
+}

@@ -192,3 +192,35 @@ As on the FX3, create-ch `0x21738c` always opens row 0 (4096 × 2160) with the 4
 - The second scaler's result on the camera (its block address is predicted only; the dump searches for known sizes).
 - What `0x890` / `0x8d0` are used for (the same windows at line length 360: probably the high base ISO). Both are patched.
 - The power switch, exposure and autofocus, rolling shutter and heat, HDMI, the playback step, 30p and PAL 24.00p (patched on the picture side, not on the encoder side: do not record them).
+
+## External flash with the electronic shutter: `fx30flash_v2` (F18 / F19 / F20), 2026-11-27, not run
+
+The study behind it, with every finding, is in the map (`reference/hotshoe_flash.md`, `modding/FX30_FLASH_ENABLE.md`). In short:
+
+- **Not stubs.** The FX30's `appFw.so` has the full external-flash code, and so does its coprocessor: the Mi-Shoe controller, the flash request handlers, and a capture-flash scheduler timed from the sensor's exposure. These match the A7 IV's and A1's function for function.
+- **Rules.** Two rules sit on the derived key `HAITA_setting_still_shutter_type_setting_px_shift_multi_shoot`. One calls `FUNC_..._electronic_for_haita` (`0xc36`), which forces Flash Mode off; the other calls `..._invalid_for_haita` (`0xc37`) and is used only with pixel shift. The engine calls the FUNC that is the rule's target; the ids inside the kind-4 action are never read (emulated). So the step changes the two rules' slots for the value ELECTRONIC, both 8-byte relocated pointers in RELRO:
+  - `0x48bcd90` → null;
+  - `0x48baaa8` → load base + `0x3e4fd70`.
+
+  "Invalid" is then called instead of "electronic", the ZV-E1's NO_RESTRICTION path. This takes effect at the next change of the derived key: Movie, then back to a still mode.
+  - `build/emu_exclusion_fx30.py` runs the FX30's own `init` (`0x2703004`) and `run_exclusion` (`0x27035d4`), with the state table at `0x820d0b0` and the inhibit counters at `0x81f65f8`.
+  - Stock: Flash Mode is forced off and inhibited.
+  - With the slots changed, after Movie and back: the re-throwing key is INVALID, Flash Mode is free and its stored value comes back. Wireless stays inhibited.
+  - Put back plus Movie and back: stock again.
+- **Menus.** 12 class-flag bytes of column 7 (LAX), copied from the FX3's column 6 (RELRO).
+- **Shoe table.** `libObj.so`'s InfraHotshoe instance is held from start-up:
+  - the instance pointer is at `0x2cde00`;
+  - its vtable word is load base + `0x251c38`;
+  - the count (42) is at instance + `0x28`;
+  - the heap copy of setting `0x01120004` is at instance + `0x60`, 32-byte entries with words 0 and 1 swapped.
+
+  Word 1 of entries 17, 19 and 35 changes from `0x04ffffff` to `0x04000012` / `14` / `24`.
+- **Helper.** `fx30flash.c` is its own small helper (no imports). Every read of the process's memory is `pread64` of `/proc/self/mem`, and every write is `pwrite64`, so a bad pointer gives EIO, not a fault.
+  - **Guards:** both ELF headers, the bytes beside every site (trimmed at relocated words), both rules' headers and other slots, both action lists, six `libObj.so` code spans, the instance's vtable and count, and all 1,344 bytes of the table apart from the three sites.
+  - **Write order:** apply writes the shoe table, then the menus, then the rules; put back runs the reverse; any failure is undone.
+  - **Emulation:** `emu_fx30_flash.py`, 33 cases.
+- **Not known until an FX30 runs it:**
+  - whether the shoe carries the flash contacts and power;
+  - the start time the capture sequence gives the scheduler for an electronic-shutter still;
+  - the shutter-speed limit with flash: about 1/15 s or 1/30 s from the read-out, and the step sets none;
+  - the camera's own menu path to Flash Mode.
