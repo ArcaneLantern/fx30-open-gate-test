@@ -1,0 +1,123 @@
+{
+ "design": "cardspeed_off_fx30_v1",
+ "build": "fx30_601",
+ "title": "Card-speed check of movie recording removed: RateCheck::GetMediaTransferRateInh (libmpr.so) never sets a 'card too slow' bit (Class 10, V30, V60, V90, CFexpress VPG); a setting missing from Sony's tables is still refused",
+ "generated_by": "build/media_rate_check.py --design",
+ "artifact_sha256": {
+  "libmpr.so": "2ba4e927c2f9eef19802c46adbce8de3902536af300a9827b22356658924e9ce"
+ },
+ "function": {
+  "va": "0x103c88",
+  "size": 604,
+  "file_off": "0x103c88",
+  "plt_stub": "0x7dc50"
+ },
+ "compare_helper": "0x103c68",
+ "sites": [
+  {
+   "va": "0x103dc8",
+   "file_off": "0x103dc8",
+   "len": 4,
+   "stock": "600200b9",
+   "new": "1f2003d5",
+   "label": "str w0, [x19] after mov w0, #0x800 -> nop"
+  },
+  {
+   "va": "0x103e68",
+   "file_off": "0x103e68",
+   "len": 4,
+   "stock": "600200b9",
+   "new": "1f2003d5",
+   "label": "str w0, [x19] after mov w0, #0x2000 -> nop"
+  }
+ ],
+ "guard": {
+  "va": "0x103c68",
+  "file_off": "0x103c68",
+  "len": 636,
+  "stock": "5f1c0072800000541f00016be0279f1ac0035fd61f00016be0879f1ac0035fd6ff8309d1001c005304040151fd7bbca9841c00539f640071fd030091f35301a9f55b02a9f71b00f97f0000b989010054008080525f00003974008052600000b9f55b42a9e003142af35341a9f71b40f9fd7bc4a8ff830991c0035fd6f50301aaa1630891f30303aaf60302aa83e8fd97f403002ac000003400808052df02003974018052600200b9eeffff17a09241b9a3030191023880d2e10315aac0030034e00303aa29dffd97d4e1fd97f503002a40008052b703089101028052a013083980628452b50f02b9b5060051a003047920008052bf170839a0070479a07f42b9bf1b0839a00b02b9e00317aabf1f083913fdff97bf160071880a0054400e00d000f0129100487538610000102088208b00001fd6e00303aa0cdffd97cbe8fd97e3ffff17a17f42b902008052000a8052acffff971f1c00726100005400008152600200b920008052c00200392000805201038052bf170839a013083980628452bf1b0839a0030479e0018052bf1f0839a0070479c0024039b40b02b9a00f02b9600240b9bf1702b9a01302b9e00317aaebfcff97abffff17a17f42b922008052000f80528fffff971f1c0072c1fcff5400008252e3ffff17a17f42b9220080520032805287ffff97a10345793f100071e1179f1a1f00016a6100005400008452600200b9df020039d9ffff17a17f42b922008052004b80527affff97a10345793f100071e1179f1a1f00016ac1feff5400008852f3ffff17a17f42b922008052c0a880526fffff971f1c0072c1fdff5400009052ebffff172200805280518152a17f42b9f8ffff1700808052df02003974008052600200b9bdffff17",
+  "about": "the compare helper and the whole check, as in the file; the sites inside it are compared separately"
+ },
+ "elf_header": {
+  "va": "0x0",
+  "len": 64,
+  "stock": "7f454c460201010300000000000000000300b70001000000b038080000000000400000000000000010a435000000000000000000400038000500400019001800"
+ },
+ "check_types_stock": {
+  "0": {
+   "fs3": "fails at any rate: 0x400",
+   "fs4": "fails at any rate: 0x400"
+  },
+  "1": {
+   "fs3": "passes from 80 Mbps, else 0x800",
+   "fs4": "passes from 80 Mbps, else 0x800"
+  },
+  "2": {
+   "fs3": "passes from 121 Mbps, else 0x1000",
+   "fs4": "passes from 121 Mbps, else 0x1000"
+  },
+  "3": {
+   "fs3": "fails at any rate: 0x2000",
+   "fs4": "passes from 401 Mbps, else 0x2000"
+  },
+  "4": {
+   "fs3": "fails at any rate: 0x4000",
+   "fs4": "passes from 601 Mbps, else 0x4000"
+  },
+  "5": {
+   "fs3": "passes from 1351 Mbps, else 0x8000",
+   "fs4": "passes from 1351 Mbps, else 0x8000"
+  },
+  "6": {
+   "fs3": "passes from 2701 Mbps, else 0x8000",
+   "fs4": "passes from 2701 Mbps, else 0x8000"
+  },
+  "7": {
+   "fs3": "fails at any rate: 0x400",
+   "fs4": "fails at any rate: 0x400"
+  }
+ },
+ "check_types_after": {
+  "0": {
+   "fs3": "fails at any rate: 0x400",
+   "fs4": "fails at any rate: 0x400"
+  },
+  "1": {
+   "fs3": "passes at any rate",
+   "fs4": "passes at any rate"
+  },
+  "2": {
+   "fs3": "passes at any rate",
+   "fs4": "passes at any rate"
+  },
+  "3": {
+   "fs3": "passes at any rate",
+   "fs4": "passes at any rate"
+  },
+  "4": {
+   "fs3": "passes at any rate",
+   "fs4": "passes at any rate"
+  },
+  "5": {
+   "fs3": "passes at any rate",
+   "fs4": "passes at any rate"
+  },
+  "6": {
+   "fs3": "passes at any rate",
+   "fs4": "passes at any rate"
+  },
+  "7": {
+   "fs3": "fails at any rate: 0x400",
+   "fs4": "fails at any rate: 0x400"
+  }
+ },
+ "verify": {
+  "ok": true,
+  "problems": []
+ },
+ "while_applied": [
+  "any card may be chosen for any movie setting Sony's tables list; a card that cannot keep up stops the recording with the camera's own write error instead of refusing to start",
+  "takes effect at the next movie-status update (insert the card again, or change a movie setting)",
+  "a cold boot (battery out) undoes it"
+ ]
+}

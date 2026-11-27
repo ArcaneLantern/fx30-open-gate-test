@@ -81,9 +81,18 @@ WRITE_STEPS = {
     "F19": ("libJit_fx30_F19.so", "8bca805ffcc9ff5f0d0d1917a80313a8add4419d93e319f1c9cdb9ef3aae4c7c",
             "apply the external-flash step fx30flash_v2 (3 shoe-table words, 12 menu flags, 2 rule slots in the main application's memory)"),
     "F20": ("libJit_fx30_F20.so", "edc587cdb3d6d49e9225aa26abd92889d4591576a846238d93ad152fdac81db0", "put back the external-flash step fx30flash_v2"),
+    # The card-speed step (session MR1, 2026-11-27; NOT RUN ON A CAMERA): design cardspeed_off_fx30_v1 (modding/CARD_SPEED_CHECK.md), its own
+    # helper helper_fx30/fx30cardspeed.c (build_fx30_cardspeed.sh). Two instructions of libmpr.so's RateCheck::GetMediaTransferRateInh become
+    # NOPs: the card's speed is no longer checked against the movie setting (V90 for XAVC S-I, V60 / V30 / Class 10 / CFexpress VPG for other
+    # settings). V18 only reads (READY / APPLIED / NOT READY).
+    "V18": ("libJit_fx30_V18.so", "aa34aba6ee5ed7f6e2b2900e3b4f508f15bcda7f90b7fa6061269e29a46b36fa",
+            "READ-ONLY check of the card-speed step cardspeed_off_fx30_v1 (libmpr.so's card-speed check; nothing is written)"),
+    "V19": ("libJit_fx30_V19.so", "e0ea5dab90b3b0aba92070cb7c3aa13bcb54c64b617fb2214538aca793b33d3f",
+            "apply the card-speed step cardspeed_off_fx30_v1 (2 instructions of libmpr.so: the card's speed is no longer checked)"),
+    "V20": ("libJit_fx30_V20.so", "9dec30476f6b42d0c6511e2205778a8d40577aecd9d3cf950508dd57d4531106", "put back the card-speed step cardspeed_off_fx30_v1"),
 }
 PINS.update({k: v[:2] for k, v in WRITE_STEPS.items()})
-LEVELS.update({k: {"L": 200, "S": 300, "N": 500, "P": 600, "B": 700, "F": 800}[k[0]] + int(k[1:]) for k in WRITE_STEPS})
+LEVELS.update({k: {"L": 200, "S": 300, "N": 500, "P": 600, "B": 700, "F": 800, "V": 900}[k[0]] + int(k[1:]) for k in WRITE_STEPS})
 WHICH = "check"
 DESIGN_MODES = ("0x820", "0x880", "0x890", "0x8c0", "0x8d0")
 # Libraries this kit published before and no longer runs (kit v1, 2026-11-26). With PINS they are the files a run may delete from the camera's
@@ -121,7 +130,7 @@ def write_result(data):
     text = data.decode("utf8", "replace")
     lines = text.split("\n")
     pick = lambda start: next((ln for ln in lines if ln.startswith(start)), None)
-    verdict = pick("== level 18 verdict: ")              # F18, the flash step's read-only check: READY, APPLIED or NOT READY
+    verdict = pick("== level 18 verdict: ")              # F18 / V18, the flash and card-speed steps' read-only checks: READY, APPLIED or NOT READY
     outcome = (verdict[len("== level 18 verdict: "):].split(":")[0] if verdict else
                "UNDO INCOMPLETE" if pick("!! UNDO INCOMPLETE") or pick("UNDO INCOMPLETE") else "DONE" if pick("DONE: ") else "NOTHING TO DO" if pick("NOTHING TO DO") else
                "NOT DONE (everything put back)" if pick("NOT DONE: ") else "NOTHING WRITTEN" if any("nothing is written" in ln for ln in lines) else "UNKNOWN")
@@ -132,7 +141,8 @@ def write_result(data):
             "complete": any(ln.startswith("== done") for ln in lines[-3:]),
             "s3": {"step": WHICH, "what": WRITE_STEPS[WHICH][2], "outcome": outcome, "ok": outcome in ("DONE", "NOTHING TO DO", "READY", "APPLIED"),
                    "outcome_line": verdict or pick("DONE: ") or pick("NOTHING TO DO") or pick("NOT DONE: ") or pick("!! UNDO INCOMPLETE") or pick("UNDO INCOMPLETE"),
-                   "flash_lines": [ln for ln in lines if ln.startswith(("InfraHotshoe instance", "table ", "  shoe entry", "instance bytes"))] if WHICH[0] == "F" else [],
+                   "flash_lines": [ln for ln in lines if ln.startswith(("InfraHotshoe instance", "table ", "  shoe entry", "instance bytes"))] if WHICH[0] == "F" else
+                                  [ln for ln in lines if ln.startswith(("libmpr.so", "  site "))] if WHICH[0] == "V" else [],
                    "timing_variant": variant, "problem_lines": problems, "notes": notes}}
 
 
@@ -399,7 +409,7 @@ def known_answer(session, camera):
 def run_helper(data):
     """What loading the uploaded bytes gives on a model FX30: the real AArch64 code in Unicorn if it is installed, else a canned text."""
     if WHICH in WRITE_STEPS:                        # the write libraries are emulated by helper_fx30/emu_fx30_write.py (and emu_fx30_flash.py); here only the session flow
-        last = ("== level 18 verdict: READY: every guard is as in the file and every site holds the stock bytes (canned)" if WHICH == "F18"
+        last = ("== level 18 verdict: READY: every guard is as in the file and every site holds the stock bytes (canned)" if WHICH in ("F18", "V18")
                 else "DONE: every site holds the target bytes (canned)")
         text = "readcheck 1 level %s\neuid 0\n== level %s\n%s\n== done, bytes written before this line: 0\n" % (WHICH[1:], WHICH[1:], last)
         return text.encode(), "canned"

@@ -626,6 +626,15 @@ DESIGN_LIBS["log12sh_v1"] = {16: ("libJit_level16_log12sh_v1.so", "4b53f3e440477
                              17: ("libJit_level17_log12sh_v1.so", "9e48c7d3cd82e04945dbc9354c85f2f2a23ec230b641613c4e9f7440446e332e")}
 DESIGN_LIBS["disp12n_log12sh_v1"] = {16: ("libJit_level16_disp12n_log12sh_v1.so", "df5e6b2bda23dff2176a0315a655a77b8f83dabe91fb9d3120a35086c5f46b09"),
                                      17: ("libJit_level17_disp12n_log12sh_v1.so", "9659276ce0786505d29f318742bf3b3a6a0173451b41c388e6384643816a4196")}
+# log12w_v1, disp12n_log12w_v1 (2026-11-27, MIDNIGHT WIDE): a second OPTION beside the Midnight default (which stays log12s_v2). After the
+# owner's stock-gamma test (F1146: a contrasty gamma spends about twice S-Log3's codes per stop over four stops) and their 'Yes, build it' to
+# the same shape on the S-Log3 table with the highlights kept. A wide band at 2.27 times stock: S-Log3 codes 203.3 to 492.5 (table points 41
+# and 87, 3.31 stops under to 0.96 over 18 % grey), recorded codes 146.125 / 803.125 / 994.75 = display inputs 96 / 864 / 1088; slopes 0.759
+# below, 2.272 inside, 0.481 above. And its native screen design. 131 words / 5 guards and 144 words / 11 guards. Not run.
+DESIGN_LIBS["log12w_v1"] = {16: ("libJit_level16_log12w_v1.so", "83575d54f648d093bca9581bfb0569bc9e76755cc3d5ea9ecd56af620db19fab"),
+                            17: ("libJit_level17_log12w_v1.so", "44642dd983f7e9a314623d6ec0a4f137925ff77be079d8504005143ba50337db")}
+DESIGN_LIBS["disp12n_log12w_v1"] = {16: ("libJit_level16_disp12n_log12w_v1.so", "9ba98dd3f572997b00c12287433169901033b374466659c57fb34e7ae84e1f85"),
+                                    17: ("libJit_level17_disp12n_log12w_v1.so", "01be9e74b9c883ad23a63ac5d547f4c3a26c5974fc8b14c597a1f3314d53fd4e")}
 LEVEL = 1
 LIB = HERE / "helper" / LIBS[1][0]
 LIB_SHA256 = LIBS[1][1]

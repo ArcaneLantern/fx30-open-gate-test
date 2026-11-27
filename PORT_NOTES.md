@@ -224,3 +224,42 @@ The study behind it, with every finding, is in the map (`reference/hotshoe_flash
   - the start time the capture sequence gives the scheduler for an electronic-shutter still;
   - the shutter-speed limit with flash: about 1/15 s or 1/30 s from the read-out, and the step sets none;
   - the camera's own menu path to Flash Mode.
+
+## Card-speed check off: `cardspeed_off_fx30_v1` (V18 / V19 / V20), 2026-11-27, not run
+
+The study is in the map (`modding/CARD_SPEED_CHECK.md`, decoder `build/media_rate_check.py`, published here as `tools/modding/fx30/media_rate_check.py`). In short:
+
+- **Where the decision is made.** `libmpr.so` (6.01, SHA-256 `2ba4e927…`), class `RateCheck`:
+  - `getMediaTransferRateCheckType_Normal` / `_SnQ` dispatch on the record format (`movieRecParam+0x170`; 9 and 12 = AVC Intra 4K, 10 = AVC Intra FHD) to one leaf per family.
+  - Each leaf looks the setting up in a table of rows {quality code `+0x174`, frame-rate class of `+0x178`, flag byte `+0x196`, ..., check type}. No row gives type 0.
+  - `GetMediaTransferRateInh` (`0x103c88`, 604 bytes) reads the card's drive info (`Fsys_GetDriveInfo`: `transferRate` at `+0x64` in Mbps, `filesystemType` at `+0x68`) and switches on the type. Its compare helper is `0x103c68`.
+- **The check types, measured by running the function in Unicorn:**
+
+  | Type | Card passes when | Inhibit bit | Sony's name |
+  |---|---|---|---|
+  | 0 | never (setting not in the tables) | `0x400`, returns 3 | UNAVAILABLE_SETTING |
+  | 1 | rate ≥ 80 | `0x800` | NEED_OVER_80_MBPS (Class 10 / U1) |
+  | 2 | rate > 120 | `0x1000` | NEED_OVER_240_MBPS (V30) |
+  | 3 | rate > 400 and exFAT (4) | `0x2000` | NEED_OVER_480_MBPS (V60) |
+  | 4 | rate > 600 and exFAT (4) | `0x4000` | NEED_OVER_720_MBPS (V90) |
+  | 5 | rate > 1350 | `0x8000` | NEED_OVER_1600_MBPS (VPG200) |
+  | 6 | rate > 2700 | `0x8000` | (VPG400) |
+
+- **XAVC S-I rows:** all ten rows of `Normal_AVC_Intra_4K` (`0x307858`) and of `Normal_AVC_Intra_FHD` (`0x307ae0`) ask for type 4 when the flag byte `+0x196` is 0 and type 5 when it is 1. What sets that byte is not traced.
+- **Where the card's rate comes from** (`libInfraMediaCommon.so`, `+0xf0` of the media object, read through `libInfraFsys.so`):
+  - SD (`mcmn_drv_mmc_open`): speed class 0/2/4/6/10 → 3/16/32/48/80; UHS U1 → 80, U3 → 240; video speed class V30 → 240, V60 → 480, V90 → 720, the last two only on a UHS-II bus.
+  - NVMe / CFexpress (`mcmn_drv_nvme_updateinfo`): always 240. A card with Sony's VPG P5 profile and enough PCIe link gets a performance-guarantee rate of `0x1900` / `0x3200` while the guarantee is active (`mcmn_drv_nvme_vpgp5_setpgtype_impl`).
+  - So a plain NVMe drive in an adapter passes types 1 and 2 only.
+- **How the result reaches the app.** Both callers, `mpr::GetMovieRecStatus` and the movie-status update `0x12b178`, OR the bit into the slot's movie-record status. `appFw.so` turns it into `movie_recording_inhibit_cause_by_system_and_media_rate_slotN`, which four exclusion rules map to "movie not recordable" on that slot (`media_movie_recordable_state_slotN` DISABLE, `media_recordable_state_movie_slotN` NOT_RECORDABLE).
+- **The patch:** the two stores of the speed bits become NOPs: `0x103dc8` (types 1 and 2) and `0x103e68` (types 3 to 6), both `str w0, [x19]` (`600200b9` → `1f2003d5`).
+  - Type 0 still stores `0x400` and returns 3.
+  - The bool output and the return value are unchanged for every input (emulated before and after).
+- **Helper.** `fx30cardspeed.c` is its own small helper (no imports); every read and write goes through `/proc/self/mem`.
+  - **Guards:** libmpr.so's ELF header and the 636 bytes from the helper to the end of the check, apart from the two sites; the check must lie in an executable mapping of `libmpr.so` at its file offset.
+  - **Write order:** apply writes in address order, put back in reverse, read back after each; any failure is undone. The kit's L19 already writes two `libmpr.so` instructions this way.
+  - **Emulation:** `emu_fx30_cardspeed.py`, 27 cases; the last ones run the patched code from the model's memory through the decoder's emulation of the check.
+- **Not known until an FX30 runs it:**
+  - whether a slot's state updates on re-inserting the card, as the two callers suggest, or needs a setting change;
+  - whether any other part refuses S-I on a slow card: none was found in `appFw.so`'s exclusion rules, but the caution screens were not traced;
+  - how an adapter and drive behave at S-I rates.
+- **Other cameras:** the same function, the same thresholds and the same two-store patch were found and emulated in the A7 IV (1.05, 2.01, 6.02), FX2, FX3, FX6, A7S III, A1, A1 II, A9 III, A7C II, ZV-E1 and A6700 (`evidence/media_rate/media_rate_summary.json` in the map).

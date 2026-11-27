@@ -52,6 +52,9 @@ The cause, read from a tester's dump and confirmed in the firmware: the FX30 set
 | `flash_check.cmd` | **New, external-flash test:** reads what the flash step's 17 places hold now and the state of the camera's shoe table (see "External flash with the electronic shutter") | No |
 | `flash_apply.cmd` | **New, not run on any camera:** lets the FX30 use a Sony shoe flash with its electronic shutter. Independent of open gate | **Yes: memory only** |
 | `flash_putback.cmd` | Puts the flash step back | Yes: memory only |
+| `cardspeed_check.cmd` | **New, card-speed step:** says whether the camera's card-speed check is stock or off (see "No card-speed check") | No |
+| `cardspeed_apply.cmd` | **New, not run on any camera:** turns off the card-speed check (V90 for XAVC S-I, V60 for 200 Mbps ...), e.g. for an NVMe drive in a CFexpress Type A adapter. Independent of open gate | **Yes: memory only** |
+| `cardspeed_putback.cmd` | Puts the card-speed step back | Yes: memory only |
 
 Nothing in this kit writes to the camera's firmware or to its settings.
 
@@ -80,7 +83,7 @@ Each live run asks for your Mac password: macOS keeps its own driver on the came
 
 If macOS refuses to open a .command file ("unidentified developer" or "could not verify"), open System Settings > Privacy & Security, scroll down and click "Open Anyway". Or open Terminal, type `bash` and a space, drag the .command file into the window, and press Return.
 
-## Android (app 0.4; v1's app ran the steps on a phone, v2's has not run yet)
+## Android (app 0.5; v1's app ran the steps on a phone, v2's has not run yet)
 
 `android/FX30-OpenGate.apk` runs this kit from a phone connected to the camera by USB-C (or an OTG adapter). It carries exactly the files in `windows/tools` of this commit and runs them unchanged; only the USB access, the dialogs and the folder for the results are the phone's.
 
@@ -92,7 +95,7 @@ If macOS refuses to open a .command file ("unidentified developer" or "could not
 6. **Stop waiting** ends a wait for the camera. It never interrupts a step that is talking to the camera.
 7. Afterwards, **Export logs** writes a zip to `Download/FX30-OpenGate/` on the phone: send that zip back.
 
-**Self-test** and **Dry run** need no camera and send nothing. The row **Flash check (read-only) / Flash test (untested) / Flash put back** runs the external-flash test below.
+**Self-test** and **Dry run** need no camera and send nothing. The row **Flash check (read-only) / Flash test (untested) / Flash put back** runs the external-flash test below. The row **Card speed check (read-only) / Card speed check off (untested) / Card speed put back** runs the card-speed step below.
 
 ## The read-only steps (check and debug dump)
 
@@ -253,6 +256,58 @@ The image processor's own flash timing needs no change as far as the firmware sh
 
 **If anything goes wrong:** if the camera shuts down or freezes when the flash is attached or switched on, take the flash off and pull the battery for 10 seconds. That returns everything to stock. `flash_putback.cmd` also puts the step back; the flash ban returns at the next switch to Movie and back. The step writes nothing unless every byte around its 17 places, and the whole shoe table, are exactly as in FX30 6.01.
 
+## No card-speed check: XAVC S-I on any card, an NVMe drive in a CFexpress adapter (new step, 2026-11-27, NOT RUN ON ANY CAMERA)
+
+**Why the camera refuses.** Before a movie recording the camera decides, for each slot, whether the card is fast enough for the movie setting. One function of its recorder library does this (`libmpr.so`, `RateCheck::GetMediaTransferRateInh`):
+
+- **The card's speed** comes from the card, in Mbps:
+  - SD: Class 10 counts as 80, U3 or V30 as 240, V60 as 480, V90 as 720. V60 and V90 count only on a UHS-II bus; on UHS-I they count as 240 (as read from the firmware; not checked on a camera).
+  - CFexpress: the card's VPG profile, when it has one.
+  - **A CFexpress card without VPG counts as 240.** An NVMe drive in a CFexpress Type A adapter is such a card.
+- **Each movie setting has a required level**, from Sony's tables:
+  - XAVC S-I 4K and FHD need **V90** (more than 600). A second set of S-I rows asks for CFexpress VPG200 (more than 1350); which camera state selects it is not known yet.
+  - 200 Mbps XAVC HS and S need V60 (more than 400).
+  - 100 Mbps needs V30 (more than 120).
+  - V60 and V90 also need the card formatted exFAT.
+- **When the card is below the level,** the camera marks that slot "not recordable" and shows its message that the card cannot record this format (the V90 message for S-I).
+
+So an NVMe drive in an adapter can record up to 100 Mbps, but not S-I and not 200 Mbps. Lowering S-I's level from V90 to V60 would not help it (240 is below both), so this step removes the check instead.
+
+**What the step changes:** two instructions of that function become "do nothing". They are the two places that store the "too slow" mark.
+- A setting missing from Sony's tables is still refused.
+- Writing to the card, and what the camera does when a card cannot keep up, are not changed.
+
+**What that means for you:**
+- The camera starts any movie setting on any card it accepts.
+- If the card or drive cannot keep up, the camera's buffer fills and it stops the recording with its own card-write message.
+- For scale: XAVC S-I 4K is 240 Mbps (30 MB/s) at 24p and up to 600 Mbps (75 MB/s) at 60p. NVMe drives are much faster than that; the adapter's heat and power draw are the open question.
+- The step does not make the camera accept a drive it refuses to mount or format.
+
+**Checks done (offline):**
+- The camera's own function was run in emulation, before and after the change, for every check type, card speed and file system. After the change no card is ever marked too slow; the "not in the tables" refusal and everything else the function returns are unchanged.
+- The step's three programs (V18 check, V19 apply, V20 put back) were run in emulation against a model of the camera's memory, in 27 cases, including the patched code run end to end.
+- The program writes nothing unless libmpr.so's header and the whole check (636 bytes) are exactly the 6.01 file's.
+
+**How to test** (separate from open gate; it can be applied on its own or together with it):
+
+1. Run `check_readonly.cmd` first, if there is no check from this power-on. Its identity lines must say SAME.
+2. In a still mode, run `cardspeed_apply.cmd`.
+3. Unplug USB. Set Movie, then File Format **XAVC S-I 4K** (or the setting your card was refused for).
+4. **Take the card out and put it back** (or change File Format to something else and back). The camera works out "card fast enough" when a card is mounted or a movie setting changes, so this step must come after the apply.
+5. Is the "cannot record with this card" message gone? Record 30 seconds, then a few minutes. Does it run to the end, or does the camera stop it (with which message)?
+6. Check the clip on a computer.
+7. Plug USB in again (a still mode) and run `cardspeed_check.cmd`. Send the newest folders in `windows/camera_private` with your answers. Please name the card, or the adapter and the NVMe drive, the file format and the frame rate.
+
+**What each outcome means:**
+
+| What you see | What it tells us |
+|---|---|
+| The message is still there after taking the card out and back | Send `cardspeed_check`. If it says APPLIED, another check is involved and we need your report |
+| Recording starts, then the camera stops it with a write message | The card or drive cannot keep up with that setting (or the adapter slows down when hot) |
+| Recording runs to the end and the clip plays | The step works for that card and setting |
+
+**To return to stock:** `cardspeed_putback.cmd`, then take the card out and back. Or pull the battery for 10 seconds.
+
 ## Questions from the first runs
 
 - **Do PAL and NTSC need different values?** No. The sensor registers and table values are the same. Only some time values inside the stored mode records differ, and the sensor step detects which set the camera holds and writes the matching one.
@@ -277,6 +332,7 @@ Every stop prints a reason and "Nothing was sent" or what was sent. Please send 
   - the patch designs of every step;
   - the builders and emulations of the designs (`tools/modding/fx30`);
   - the external-flash step: its own helper source `tools/camera_tests/CT6_memory_read_check/helper_fx30/fx30flash.c` (libraries F18 check, F19 apply, F20 put back), its design `tools/modding/designs/fx30flash_v2.json`, the emulation of the camera's rule engine (`tools/modding/fx30/emu_exclusion_fx30.py`) and of the three libraries (`helper_fx30/emu_fx30_flash.py`).
+  - the card-speed step: its own helper source `helper_fx30/fx30cardspeed.c` (libraries V18 check, V19 apply, V20 put back), its design `tools/modding/designs/cardspeed_off_fx30_v1.json`, the decoder that finds the check and its patch in any of these cameras' firmware and runs it in emulation (`tools/modding/fx30/media_rate_check.py`), and the emulation of the three libraries (`helper_fx30/emu_fx30_cardspeed.py`).
 - `macos/`: `setup.command` and one `.command` launcher per Windows launcher; they run `windows/tools`.
 - `android/FX30-OpenGate.apk`: the phone app, carrying `windows/tools` as published here.
 - `PORT_NOTES.md`: how the open gate was built for the FX30, what was checked and how, the address map, and what is not known.
