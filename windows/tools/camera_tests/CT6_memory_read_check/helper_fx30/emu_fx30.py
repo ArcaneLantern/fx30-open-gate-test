@@ -19,6 +19,9 @@ whole page, direction 0, into the allocated buffer is accepted). Cases, for both
   v1-applied   the sensor design of kit v1 (ogsq_fx30_v1: row 96, sensor registers untouched) still in memory -> its sites are
                neither stock nor v2's, verdict NOT READY (a cold boot is needed before kit v2)
   exists       a result file already present                                        -> nothing done
+The 5.7K twins (check57, dump57: the same source with the 5.7K designs as targets, gen_fx30.py --57), 2026-11-28:
+  stock        -> every site stock, READY          5.7K applied -> its sites TARGET, READY          4K applied -> the records and encoder sites
+  are neither stock nor 5.7K: NOT READY; and the ordinary check on a camera in the 5.7K state: NOT READY.
 and the other way round, the published check libraries of the FX3, FX2, ZV-E1 and A7S III kits run on a stock FX30: each must say NOT READY
 (an FX30 owner might run one of those kits; their apply scripts start only after a READY check).
 """
@@ -109,15 +112,23 @@ def set_mode(cp, index):
         a += MROW
 
 
+K57 = {"sensor": "og57n_fx30_v1", "out": "og57cp_fx30_v1", "enc": "ogfile57r300m1_fx30_v4"}      # the 5.7K state's designs, as model() arguments
+
+
 def model(build="fx30_601", applied=False, screen=True, reserve=True, exists=False, enc="ogfile2560_hs_s_fx30_v2", system="ntsc",
-          sensor="ogsq_fx30_v2", movie=False):
+          sensor="ogsq_fx30_v2", movie=False, out="outsz2560_fx30_v1"):
     cp = bytearray(ex(build, "nflasha8/cpapp-b.bin"))
     av = bytearray(ex(build, "nflasha3/av-cam.bin"))
     libs = {n: ex(build, "nflasha15/lib" + n) for n in ("/libmpr.so", "/libsencore.so", "/libJiritsu.so")}
     lm = bytearray(libs["/libmpr.so"])
-    og, oz, fl, sc = design(sensor), design("outsz2560_fx30_v1"), design(enc), design("lcd32dsq_fx30_v1")
+    og, oz, fl, sc = design(sensor), design(out), design(enc), design("lcd32dsq_fx30_v1")
     ram = {}
     if build == "fx30_601":                      # the FX30's RAM tables; a foreign body keeps its own image and zeros
+        d57 = design(K57["out"])                 # the memory manager's rows and key list the 5.7K output design names, as the FX30's set-up leaves them
+        for x in d57["sites"]:
+            ram[int(x["ram_address"], 16)] = bytes.fromhex(x["old"])
+        for g in d57["guards"]:
+            ram[int(g["ram_address"], 16)] = bytes.fromhex(g["bytes"])
         for m, sr in og["stored_records"].items():
             ram[RECS + sr["index"] * REC] = bytes.fromhex(sr[system]["design" if applied else "stock"])
         for g in oz["guards"]:
@@ -234,6 +245,41 @@ def main():
             ok &= not problems
             if "--show" in sys.argv and case == "stock":
                 print("\n".join(ln[:150] for ln in text.split("== identity")[1].splitlines()[:80]))
+    # ---- the 5.7K twins
+    f57 = json.loads((HERE / "fx30_expected57.json").read_text(encoding="utf8"))
+    for which in ("check57", "dump57"):
+        lib = (HERE / f"libJit_fx30_{which}.so").read_bytes()
+        for case, kw, verdict in (("stock", {}, "VERDICT READY"), ("stock-movie", {"movie": True}, "VERDICT READY"),
+                                  ("5.7K applied", dict(K57, applied=True, movie=True), "VERDICT READY"),
+                                  ("5.7K applied (PAL)", dict(K57, applied=True, movie=True, system="pal"), "VERDICT READY"),
+                                  ("4K applied", {"applied": True, "movie": True}, "VERDICT NOT READY")):
+            r, text = run(lib, **kw)
+            lines = text.split("\n")
+            st = {ln.split()[1]: ln.rsplit("  ", 1)[1] for ln in lines if ln.startswith("site ")}
+            av = [ln.rsplit("  ", 1)[1] for ln in lines if ln.startswith("av ")]
+            lm = [ln.rsplit("  ", 1)[1] for ln in lines if ln.startswith("lm ")]
+            problems = []
+            if r.bad or set(r.writes) - {E.RESULT} or any(c[0] == "transfer" and c[1] != 0 for c in r.lib_calls):
+                problems.append("stopped, wrote another file or sent to the coprocessor: %s" % r.bad)
+            if verdict not in text or "== done" not in text or "fx30read fx30read_v2 5.7K " not in lines[0]:
+                problems.append("verdict or header: %r" % lines[0][:60])
+            if len(av) != f57["av_sites"] or len(lm) != f57["lm_sites"] or len(st) != len(f57["cp_sites"]):
+                problems.append("site counts %d %d %d" % (len(av), len(lm), len(st)))
+            want = {"stock": "STOCK", "stock-movie": "STOCK"}.get(case, "TARGET")
+            if case != "4K applied":
+                hard = [k for k in ("record_left", "record_right", "crop", "window", "pdaf", "lc", "readout", "geometry", "sensor_window") if st.get(k) != want]
+                if hard or set(av) != {want} or set(lm) != {want} or (want == "TARGET" and not all(st.get("outsize%d" % k) == "TARGET" for k in range(5))):
+                    problems.append("not all %s: %s %s %s" % (want, hard, set(av), set(lm)))
+            else:                                # the 4K state: its records and its encoder sites are neither stock nor the 5.7K target
+                if st.get("record_left") != "OTHER" or st.get("sensor_window") != "TARGET" or "OTHER" not in av:
+                    problems.append("4K state: %s %s" % (st.get("record_left"), set(av)))
+            print(f"{which:7} {case:18} {'ok' if not problems else 'FAILED'}  result {len(text):7} bytes  {'; '.join(problems)}")
+            ok &= not problems
+    for which in ("check", "dump"):              # the ordinary pair on a camera in the 5.7K state
+        r, text = run((HERE / f"libJit_fx30_{which}.so").read_bytes(), **dict(K57, applied=True, movie=True))
+        good = not r.bad and "VERDICT NOT READY" in text and "== done" in text
+        print(f"{which:7} {'on a 5.7K camera':18} {'ok, NOT READY' if good else 'FAILED'}")
+        ok &= good
     # ---- the other kits' check libraries on an FX30
     for kit, path, verdict in (("FX3 kit", HERE.parent / "helper_fx3/libJit_fx3_check.so", "DIFFERS from the 7.02 update"),
                                ("FX2 kit", HERE.parent / "helper_fx2/libJit_fx2_check.so", "DIFFERS from the 1.01 update"),

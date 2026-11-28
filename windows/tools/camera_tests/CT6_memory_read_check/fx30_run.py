@@ -42,8 +42,12 @@ import ct6_level1_run as R  # noqa: E402
 FIRMWARE, MODEL, BUILD = "6.01", "ILME-FX30", "fx30_601"
 S3 = HERE / "helper_fx30"                      # this kit's folder (the name S3 is kept from s3_run.py)
 PINS = {"check": ("libJit_fx30_check.so", "6ebb1d807abee22521a20e9f199f61cfe90eca84cf7592cbcb462ee2c20b2582"),      # fx30read_v2 (2026-11-26)
-        "dump": ("libJit_fx30_dump.so", "94ae0c8b3ca3d6ac5897e8e88fd6d4eecd4cf323fac88e16f9c64f512e470c0a")}
-LEVELS = {"check": 101, "dump": 102}              # numbers outside the A7 IV runner's own levels: none of its level-specific code runs
+        "dump": ("libJit_fx30_dump.so", "94ae0c8b3ca3d6ac5897e8e88fd6d4eecd4cf323fac88e16f9c64f512e470c0a"),
+        # the 5.7K twin (2026-11-28): the same source with the 5.7K designs as its targets (helper_fx30/gen_fx30.py --57). A camera in the 5.7K
+        # state is READY to these two; the ordinary pair calls its picture records and encoder sites OTHER.
+        "check57": ("libJit_fx30_check57.so", "1e34bebd6b828ae6dee3b18c5141722fb2b9719ca147317d56dade8068f00ac2"),
+        "dump57": ("libJit_fx30_dump57.so", "89462da53e9c40f94932273cb91d4c4347ad74076ad4bdf3c0b0d231d6e2dc8c")}
+LEVELS = {"check": 101, "dump": 102, "check57": 103, "dump57": 104}              # numbers outside the A7 IV runner's own levels: none of its level-specific code runs
 # THE WRITE STEPS. Each is one library built from the A7 IV helper's write code with this camera's tables (helper_fx30/build_fx30_write.sh).
 # They change the running camera's memory until a cold boot. They are run through fx30_apply.py, never by a launcher of the read-only kit.
 WRITE_STEPS = {
@@ -90,9 +94,28 @@ WRITE_STEPS = {
     "V19": ("libJit_fx30_V19.so", "e0ea5dab90b3b0aba92070cb7c3aa13bcb54c64b617fb2214538aca793b33d3f",
             "apply the card-speed step cardspeed_off_fx30_v1 (2 instructions of libmpr.so: the card's speed is no longer checked)"),
     "V20": ("libJit_fx30_V20.so", "9dec30476f6b42d0c6511e2205778a8d40577aecd9d3cf950508dd57d4531106", "put back the card-speed step cardspeed_off_fx30_v1"),
+    # THE 5.7K STATE (2026-11-28; NOT RUN ON ANY FX30): the A7 IV's real 5760x3840 state (F906/F989) on the FX30. The sensor window is the 4K open
+    # gate's (5952x3968 from row 94, which records on FX30s); the first-stage scaler gives 5760x3840 instead of 4336x2438, the output is 5760x3840
+    # one to one, and the encoder runs both cores at 300 Mbps on the 100M settings with I and P pictures only (no B pictures).
+    #   K5/K6    og57n_fx30_v1: ogsq_fx30_v2 with the two picture records for a 5760x3840 first stage (everything else byte for byte the same)
+    #   K16/K17  og57cp_fx30_v1: four scaler units, a 30.8 MB output buffer id (0x43f), the output size 5760x3840; in L16's place
+    #   K19/K20  ogfile57r300m1_fx30_v4: the encoder and MP4 header side; M19 = v3, the same without the MP4 header sizes (put back by K20)
+    "K5": ("libJit_fx30_K5.so", "d1df44b064e024e567c23758caa5b071b689a6606957798c2f744277a7d6e8f6",
+           "apply the 5.7K sensor-side design og57n_fx30_v1 (the open-gate window 5952x3968 from row 94 as in L5, with picture records whose "
+           "first-stage scaler gives 5760x3840)"),
+    "K6": ("libJit_fx30_K6.so", "dedb331a8ed5ab046c62ec5353dcba80deb4ea088de123e19fe256041727cdfe", "put back the 5.7K sensor-side design og57n_fx30_v1"),
+    "K16": ("libJit_fx30_K16.so", "88f8b3b9a435a8a0f917cd7a58eccd4f30526bfe8bff8ee058d7b4643194e76c",
+            "apply the 5.7K output design og57cp_fx30_v1 (four scaler units, the 30.8 MB output buffer id 0x43f, output size 5760x3840: 5 words)"),
+    "K17": ("libJit_fx30_K17.so", "921d2cc32bb6358ab83b1f8eeede5680128c758bf6a8aa2b20d5cc19f4a8eaec", "put back the 5.7K output design og57cp_fx30_v1"),
+    "K19": ("libJit_fx30_K19.so", "8a920382cf960b7af65db07e624612d6a368e49cefbc47dffa370d10a07068ef",
+            "apply the 5.7K encoder-side design ogfile57r300m1_fx30_v4 (two encoder cores, 300 Mbps on the 100M settings, no B pictures, the MP4 "
+            "headers say 5760x3840: 296 + 14 sites)"),
+    "K20": ("libJit_fx30_K20.so", "78209dec6cd3eb7cd80234403e0c25e938319e2a71ac10f1ed63f43f746c421d", "put back the 5.7K encoder-side design ogfile57r300m1_fx30_v4 (or v3)"),
+    "M19": ("libJit_fx30_M19.so", "8db9a04a51dc4a4e37ec8981fc3fe2c75506bb241678049d2d4ae69da1070646",
+            "apply the 5.7K encoder-side design ogfile57r300m1_fx30_v3 (as K19, but the MP4 headers keep 3840x2160)"),
 }
 PINS.update({k: v[:2] for k, v in WRITE_STEPS.items()})
-LEVELS.update({k: {"L": 200, "S": 300, "N": 500, "P": 600, "B": 700, "F": 800, "V": 900}[k[0]] + int(k[1:]) for k in WRITE_STEPS})
+LEVELS.update({k: {"L": 200, "S": 300, "N": 500, "P": 600, "B": 700, "F": 800, "V": 900, "K": 1000, "M": 1100}[k[0]] + int(k[1:]) for k in WRITE_STEPS})
 WHICH = "check"
 DESIGN_MODES = ("0x820", "0x880", "0x890", "0x8c0", "0x8d0")
 # Libraries this kit published before and no longer runs (kit v1, 2026-11-26). With PINS they are the files a run may delete from the camera's
@@ -146,12 +169,17 @@ def write_result(data):
                    "timing_variant": variant, "problem_lines": problems, "notes": notes}}
 
 
+def twin():
+    """"57" while one of the 5.7K read-only libraries is in use: their expected values and reference data are the 5.7K designs'."""
+    return "57" if WHICH in ("check57", "dump57") else ""
+
+
 def reference():
-    return json.loads((S3 / "fx30_reference.json").read_text(encoding="utf8"))
+    return json.loads((S3 / ("fx30_reference%s.json" % twin())).read_text(encoding="utf8"))
 
 
 def expected():
-    return json.loads((S3 / "fx30_expected.json").read_text(encoding="utf8"))
+    return json.loads((S3 / ("fx30_expected%s.json" % twin())).read_text(encoding="utf8"))
 
 
 # ------------------------------------------------------------ reading a result
@@ -336,7 +364,8 @@ def decode_pages(pages):
     if se is not None:
         st["resize_settings"] = se.hex()
     seen = {}
-    pairs = {(5952, 3968), (5952, 3348), (5976, 3976), (5976, 3356), (4336, 2438), (4336, 2442), (3840, 2560), (3840, 2160), (2176, 2438), (2160, 2438), (1920, 1080)}
+    pairs = {(5952, 3968), (5952, 3348), (5976, 3976), (5976, 3356), (4336, 2438), (4336, 2442), (3840, 2560), (3840, 2160), (2176, 2438), (2160, 2438), (1920, 1080),
+             (5760, 3840), (2880, 3840), (2912, 3844)}                 # the 5.7K state: output, a half of the first stage, its padded half
     for addr, (name, blob) in sorted(pages.items()):
         if name not in ("resizework", "resizestate"):
             continue
@@ -468,10 +497,11 @@ def selftest(lib):
     else:
         check(f.get("ready") and not f.get("identity_differs"), "normal run: the %s helper reports a stock 6.01 camera as READY" % sim.how)
     if sim.how == "emulated":
-        check(len(f["coprocessor_sites"]) == len(expected()["cp_sites"]) and f["avcam_stock"] == 101 and len(f["libmpr_sites"]) == expected()["lm_sites"] == 6,
+        check(len(f["coprocessor_sites"]) == len(expected()["cp_sites"]) and f["avcam_stock"] == expected()["av_sites"] == (296 if twin() else 101)
+              and len(f["libmpr_sites"]) == expected()["lm_sites"] == (14 if twin() else 6),
               "normal run: every coprocessor site, 6 libmpr (4 rows, 2 MP4 header heights) and 101 av-cam sites are reported")
         check(f.get("stored_records") == {m: "stock (NTSC)" for m in DESIGN_MODES}, "normal run: the five stored records read as stock (NTSC)")
-        if WHICH == "dump":
+        if WHICH in ("dump", "dump57"):
             d = f.get("decoded", {})
             check(d.get("matrix_equals_file") and len(d.get("stored_records", {})) == 31 and d.get("size_table"), "dump: the pages decode (matrix, 31 records, size table)")
             check(d.get("sensor_registers", {}).get("rows") == 154 and d.get("matrix_state") == "as the firmware file" and "sensor_window" in d
@@ -635,7 +665,7 @@ def main():
     ap.add_argument("--remove-library", metavar="SHA256", help="a libJit.so left on the camera's service partition that is none of this kit's: delete it first, "
                                                                "only if its SHA-256 is this (a library of this kit, v1 or v2, is deleted without being named)")
     ap.add_argument("--firmware-shown")
-    ap.add_argument("--writes-memory", action="store_true", help="needed for a write step (L5, L6, B5, B6, L16, L17, L19, L20, N19, S16, S17, P29, P30): it changes the running camera's memory")
+    ap.add_argument("--writes-memory", action="store_true", help="needed for a write step (L5, L6, B5, B6, L16, L17, L19, L20, N19, S16, S17, P29, P30, K5, K6, K16, K17, K19, K20, M19): it changes the running camera's memory")
     a = ap.parse_args()
     if a.which in WRITE_STEPS and a.go and not (a.dry_run or a.selftest) and not a.writes_memory:
         raise SystemExit("%s is a write step: %s. It needs --writes-memory as well. Use fx30_apply.py. Nothing was sent." % (a.which, WRITE_STEPS[a.which][2]))

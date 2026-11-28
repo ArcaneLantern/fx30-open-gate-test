@@ -1,0 +1,136 @@
+{
+ "design": "og57cp_fx30_v1",
+ "build": "fx30_601",
+ "camera": "ILME-FX30 (FX30), firmware 6.01",
+ "title": "Output size 5760x3840, four scaler units, a buffer id for the output picture on units of 30.8 MB, and that id in the size table, in the coprocessor's RAM (FX30 6.01 port)",
+ "kind": "ram_words",
+ "artifact": "cpapp-b.bin, RAM only: these bytes are not in the file",
+ "emulated_image_sha256": "2877ba56332e9157bfea7610b2ac8561e6edfbea9c26ff8bafa0531f8fe3a247",
+ "generated_by": "build/build_ram_words_fx30.py og57cp",
+ "ported_from": {
+  "design": "og57cp_v3",
+  "build": "a7iv_602",
+  "works": "on the A7 IV (F906, the real 5760x3840 file)"
+ },
+ "status": "addresses from the FX30's own code and its emulated tables; the setting's neighbours read as zero on a real FX30; never written on an FX30",
+ "table": "unit-count setting 0x155d630 (split rule 0x46bdd4), the memory manager's id rows 0x20b6500, the movie size table 0x155d40c",
+ "summary": {
+  "sites": 5,
+  "bytes": 20,
+  "output_size": [
+   5760,
+   3840
+  ],
+  "picture_bytes_at_format_code_2": 27648000,
+  "output_unit_bytes": 30824400,
+  "output_units_in_the_allocator": 6,
+  "memory_id": "0x43f, made from the row of id 0x446, with the key list of id 0x498 (key 0x5f2: three units to a 106.9 MB block of key 0x39, from the two blocks the main output's 0x2d9 units used in stock); the size table's entry names it",
+  "scaler_units": 4,
+  "replaces": "og57cp_v2, whose units (key 0x6a3) take a 134 MB block of key 0x2f that the recording needs for id 0x60c (F707, F708; evidence/hardware/dmm_server_id_0x43f_keys_compared.json)",
+  "goes_with": [
+   "og57n_fx30_v1 (the first stage at 5760x3840)",
+   "ogfile57r300m1_fx30_v4",
+   "no raw-write-buffer change: the sensor window is the 4K open gate's"
+  ]
+ },
+ "sites": [
+  {
+   "ram_address": "0x155d630",
+   "old": "00000000",
+   "new": "03000000",
+   "note": "the unit-count setting the split rule 0x430d5c reads: 0 (by size class: two units for 4K) to 3 (four units) [A7 IV 0x143c9b8]"
+  },
+  {
+   "ram_address": "0x20b6c8c",
+   "old": "888c0b02",
+   "new": "608d0b02",
+   "note": "id table row 241 (id 0x446, which cannot be opened: no layout has a unit of its key 0x587): key-list pointer to the list of id 0x498, one key, 0x5f2 (units of 30,824,400 bytes) [A7 IV 0x1faeb0c]"
+  },
+  {
+   "ram_address": "0x20b6c88",
+   "old": "46040000",
+   "new": "3f040000",
+   "note": "the same row: id 0x446 to 0x43f, the id the firmware asks for an output plane above 13,271,040 bytes [A7 IV 0x1faeb08]"
+  },
+  {
+   "ram_address": "0x155d448",
+   "old": "d9020000",
+   "new": "3f040000",
+   "note": "size class 3, second entry: the output buffer's memory id, 0x2d9 (units of 13,271,040 bytes) to 0x43f; the sequence takes its output buffer id from here (0x4311f0) [A7 IV 0x143c7c0]"
+  },
+  {
+   "ram_address": "0x155d444",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "size class 3, second entry: output width and height [A7 IV 0x143c7bc]"
+  }
+ ],
+ "guards": [
+  {
+   "ram_address": "0x155d628",
+   "bytes": "0000000000000000",
+   "note": "the eight bytes before the setting: zero on the camera [A7 IV 0x143c9b0]"
+  },
+  {
+   "ram_address": "0x155d634",
+   "bytes": "00000000",
+   "note": "the four bytes after the setting's word: zero on the camera [A7 IV 0x143c9bc]"
+  },
+  {
+   "ram_address": "0x20b6c80",
+   "bytes": "45040000808c0b02",
+   "note": "the row before: id 0x445 and its key list [A7 IV 0x1faeb00]"
+  },
+  {
+   "ram_address": "0x20b6d60",
+   "bytes": "98040000608d0b02",
+   "note": "the row of id 0x498: its key list is where the new pointer points [A7 IV 0x1faebe0]"
+  },
+  {
+   "ram_address": "0x20b8d60",
+   "bytes": "f2050000ffffffff",
+   "note": "that key list: key 0x5f2, end [A7 IV 0x1fb0be0]"
+  },
+  {
+   "ram_address": "0x155d43c",
+   "bytes": "000f70083e040000",
+   "note": "the entry before: 3840, 2160, memory id 0x43e [A7 IV 0x143c7b4]"
+  }
+ ],
+ "checked_in_the_firmware_allocator": {
+  "tool": "build/emu_dmm_server.py --build fx30_601",
+  "open_0x43f": [
+   {
+    "address": "0x821c00000",
+    "size": 30824400
+   }
+  ],
+  "units_of_0x43f_in_a_row": 9,
+  "then_open": {
+   "0x43e": [
+    24676096
+   ],
+   "0x2d9": [
+    13271040
+   ],
+   "0x4b8": [
+    13271040
+   ],
+   "0x60c": [
+    125829120
+   ]
+  }
+ },
+ "checked_against": [
+  "the FX30 split rule 0x46bdd4 = the A7 IV's 0x430d5c: the bytes after the setting's load equal, table {1, 2, 4}",
+  "3 dumps of a real FX30: 0x155d620..0x155d650 zero",
+  "build/emu_size_table.py fx30_601",
+  "build/emu_dmm_server.py --build fx30_601 (id rows, key lists: the A7 IV's rows 240, 241, 268)"
+ ],
+ "precondition": "write it in a still mode, before MOVIE is entered; instead of outsz2560_fx30_v1 (the same size word)",
+ "restore": "write the old words back (in the reverse order), or cold boot",
+ "not_shown": [
+  "anything on an FX30",
+  "the FX30's other outputs at this size (they keep the stock sizes)"
+ ]
+}

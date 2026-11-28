@@ -71,6 +71,11 @@ SHIFTED["a1m2_400"] = 0x15C4
 # so the FX2's 3840x2560 heights come from here now: the same two sites, bytes and notes as its OTHER_BUILDS entry (ogfile2560_hs_s_fx2_v1/_v2
 # rebuild byte for byte). Checked by build/emu_mp4_meta.py --build fx2_101 --both.
 SHIFTED["fx2_101"] = -0x37B4
+# A1 4.00 (ILCE-1, 2026-11-28, modding/A1_PORT_ENCODER.md): the A7 IV's writer moved by -0x3f3c (track config 0x21ebdc, stsd entry 0x220190, PROF
+# entry 0x221e7c, tkhd 0x2221cc, profile id 0x2217c0, pixel aspect 0x221df4, level label 0x21e7d8): each function instruction for instruction
+# (the track config 150 of 160 words, the 10 others its five jump-table ADRP/ADD pairs); all nine size sites found by 32 bytes of the A7 IV's
+# context, unique, the same instructions (the A7S III's writer is the same block, at A1 + 0x5070). Checked by build/emu_mp4_meta.py --build a1_400.
+SHIFTED["a1_400"] = -0x3F3C
 
 
 # A6700 2.00 (2026-11-26, modding/A6700_PORT_ENCODER.md): the same writer source in another compile (libmpr.so 3,180,832 bytes). Track config
@@ -88,6 +93,34 @@ A6700 = {"size": {"avc_h": (0x1EC1B8, 5, ("mov", "w5, #0x870"), "MP4 track heigh
                      (0x1EF874, 0, ("ldrh", "w0, [x1, #0x2a]"), "PROF profile id 0x1ef3d4, HEVC chroma code 1: width read -> the constant 3840")]}
 
 
+# FX30 6.01 (2026-11-28, the FX30's 5.7K step): all nine size sites of its writer (the FX3's relinked body 0x2c higher, see OTHER_BUILDS), read by
+# disassembly: the two 4K branches of the track config 0x21fef0 hold `mov w6, #0x870` / `mov w7, #0xf00` in the A7 IV's registers; the stsd entry
+# set-up 0x221490 and the PROF pixel aspect 0x2230b4 each hold one 7680 compare; the profile id 0x222ac0 has the A7 IV's three width loads (w3, w0,
+# w0). The 3840x2560 answer is the two heights of OTHER_BUILDS["fx30_601"], byte for byte. Checked by emu_mp4_meta.py --build fx30_601 --both.
+FULL = {"fx30_601": {"size": {"avc_h": (0x21FF68, ("mov", "w6, #0x870"), "MP4 track height, XAVC S 4K (AVC)"),
+                              "avc_w": (0x21FF6C, ("mov", "w7, #0xf00"), "MP4 track width, XAVC S 4K (AVC)"),
+                              "hevc_h": (0x2200A0, ("mov", "w6, #0x870"), "MP4 track height, XAVC HS 4K (HEVC)"),
+                              "hevc_w": (0x2200A4, ("mov", "w7, #0xf00"), "MP4 track width, XAVC HS 4K (HEVC)")},
+                     "width": [(0x221538, ("mov", "w1, #0x1e00"), "stsd entry set-up 0x221490: its 7680 compare -> 5760, so a 5760-wide entry is built (else it returns 2)"),
+                               (0x22310C, ("mov", "w0, #0x1e00"), "PROF pixel aspect 0x2230b4: its 7680 compare -> 5760 (1:1), else it returns 3")],
+                     "profile": [(0x222AEC, ("ldrh", "w3, [x1, #0x2a]"), "MOVW3", "PROF profile id 0x222ac0, AVC: width read -> the constant 3840 (the UHD ids)"),
+                                 (0x222F28, ("ldrh", "w0, [x1, #0x2a]"), "MOVW0", "PROF profile id 0x222ac0, HEVC chroma code 2: width read -> the constant 3840"),
+                                 (0x222F74, ("ldrh", "w0, [x1, #0x2a]"), "MOVW0", "PROF profile id 0x222ac0, HEVC chroma code 1: width read -> the constant 3840")]}}
+
+
+def sites_full(width, height, build):
+    """A build whose nine sites are listed in FULL (the A7 IV's instructions and registers at its own addresses)."""
+    assert (width, height) in ((3840, 2560), (5760, 3840)), "the open-gate files of the %s kit" % build
+    t = FULL[build]
+    s = t["size"]
+    out = [(s[k][0], MOVZ_W(6, height), s[k][1], s[k][2] + f": 2160 -> {height}") for k in ("avc_h", "hevc_h")]
+    if width != 3840:
+        out += [(s[k][0], MOVZ_W(7, width), s[k][1], s[k][2] + f": 3840 -> {width}") for k in ("avc_w", "hevc_w")]
+        out += [(a, MOVZ_W(1 if "w1" in d[1] else 0, width), d, why) for a, d, why in t["width"]]
+        out += [(a, MOVZ_W(3 if kind == "MOVW3" else 0, 3840), d, why) for a, d, kind, why in t["profile"]]
+    return sorted(out)
+
+
 def sites_a6700(width, height):
     assert (width, height) in ((3840, 2560), (5760, 3840)), "the open-gate files of the A6700 kit"
     s = A6700["size"]
@@ -103,6 +136,8 @@ def sites(width, height, build="a7iv_602"):
     """[(address, new 4 bytes, expected (mnemonic, operands) of the stock instruction, note)] for a file of width x height."""
     if build == "a6700_200":
         return sites_a6700(width, height)
+    if build in FULL:
+        return sites_full(width, height, build)
     if build in SHIFTED:
         return [(a + SHIFTED[build], new, want, why) for a, new, want, why in sites(width, height)]
     if build != "a7iv_602":

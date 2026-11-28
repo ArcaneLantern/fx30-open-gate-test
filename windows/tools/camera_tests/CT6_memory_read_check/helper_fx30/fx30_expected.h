@@ -324,6 +324,8 @@ struct id_file { const char *name; unsigned char sha256[32]; };
 struct id_page { unsigned int address; unsigned char sha256[32]; };
 struct cp_site { const char *name; unsigned int address, length; const unsigned char *stock, *target; int soft; const unsigned char *alt; };
 struct mp_site { unsigned long offset; unsigned int length; const unsigned char *stock, *target; };
+#define MP_STOCK(e) ((e)->stock)
+#define MP_TARGET(e) ((e)->target)
 struct av_guard { const char *name; unsigned long offset; unsigned int length; unsigned char sha256[32]; };
 struct dump_range { const char *name; unsigned int address, pages; };
 static const struct id_file id_files[] = {

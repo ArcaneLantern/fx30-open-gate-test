@@ -11,6 +11,11 @@ This writes, into helper/:
                                              matrix's column 1) and the five stored records (MULTI_REC)
   expected_sites_ogsq_fx30_v2b.h             levels 5/6 (B5/B6): variant B of the sensor design (two values differ; an A/B test)
   expected_words_outsz2560_fx30_v1.h         levels 16/17: the output-size word and its guards
+  5.7K (2026-11-28; the A7 IV's real 5760x3840 state, 300 Mbps, no B pictures):
+  expected_sites_og57n_fx30_v1.h             levels 5/6 (K5/K6): ogsq_fx30_v2 with the first-stage picture at 5760x3840
+  expected_words_og57cp_fx30_v1.h            levels 16/17 (K16/K17): four scaler units, the 0x43f output buffer row, output size 5760x3840
+  expected_mp_ogfile57r300m1_fx30_v4.h       levels 19/20 (K19/K20): the encoder side (two cores, 300 Mbps, M = 1, MP4 headers 5760x3840)
+  expected_mp_ogfile57r300m1_fx30_v3.h       level 19 (M19): the same without the MP4 header sizes (--no-meta; put back by K20)
   expected_words_lcd32dsq_fx30_v1.h          levels 16/17 (S16/S17): the rear screen at 3:2 and the de-squeeze words
   expected_mp_ogfile2560_hs_s_fx30_v2.h      levels 19/20: encoder side with the two MP4 header heights
   expected_mp_ogfile2560_hs_s_fx30_v1.h      levels 19/20 (N19): the same without the heights (--no-meta)
@@ -109,9 +114,18 @@ def sites_header(name="ogsq_fx30_v2"):
     return len(sites), len(offs), [hex(m) for m in MODES]
 
 
+# og57cp_fx30_v1 (2026-11-28, 5.7K): the unit-count setting 0x155d630 (the split rule 0x46bdd4 reads it) with its zero neighbours as guards, the
+# memory manager's row of id 0x446 (row 241 of the id rows 0x20b6500) with the row before, the row of id 0x498 and that id's key list as guards
+# (build/build_ram_words_fx30.py og57cp), and the size table's 4K entry.
+OG57CP_SITES = (SIZE_TABLE, (0x155D630, 0x155D634), (0x20B6C88, 0x20B6C90))
+OG57CP_GUARDS = ((0x155D628, 0x155D638), (0x20B6C80, 0x20B6C88), (0x20B6D60, 0x20B6D68), (0x20B8D60, 0x20B8D68))
+
+
 def regions(name):
     if name == "outsz2560_fx30_v1":
         return (SIZE_TABLE,), ()
+    if name == "og57cp_fx30_v1":
+        return OG57CP_SITES, OG57CP_GUARDS
     r = json.loads(LCD_REGIONS.read_text(encoding="utf8"))[name]
     return tuple((int(a, 16), int(b, 16)) for a, b in r["sites"]), tuple((int(a, 16), int(b, 16)) for a, b in r["guards"])
 
@@ -170,6 +184,11 @@ def mp_header(name):
                 a, b = int(g["file_off"], 16), bytes.fromhex(g["bytes"])
                 assert lm[a:a + len(b)] == b and len(b) <= 16
                 g_lm.append((a, b))
+            continue
+        if len(old) == 4:                                        # 5.7K (2026-11-28): the row's whole raster (width and height), as in
+            # helper_fx2/gen_fx2_write.py: the guard is the 4-byte codec word before it (1 for the HEVC rows 5 and 7, 0 for the AVC rows 0 and 2)
+            assert (off - 4 - COMB) % 0x18 == 0 and struct.unpack("<HH", old) == (3840, 2160)
+            g_lm.append((off - 4, lm[off - 4:off]))
             continue
         assert (off - 6 - COMB) % 0x18 == 0 and struct.unpack_from("<H", lm, off - 2)[0] == 3840
         g_lm.append((off - 6, lm[off - 6:off]))
@@ -265,3 +284,8 @@ if __name__ == "__main__":
     for n in ("ogfile2560_hs_s_fx30_v2", "ogfile2560_hs_s_fx30_v1"):
         print("mp header", n, mp_header(n))
     print("ad header avdec8k_fx30_v1:", ad_header())
+    # 5.7K (2026-11-28)
+    print("sites header og57n_fx30_v1 (5.7K):", sites_header("og57n_fx30_v1"))
+    print("words header og57cp_fx30_v1 (5.7K):", words_header("og57cp_fx30_v1"))
+    for n in ("ogfile57r300m1_fx30_v4", "ogfile57r300m1_fx30_v3"):
+        print("mp header", n, mp_header(n))

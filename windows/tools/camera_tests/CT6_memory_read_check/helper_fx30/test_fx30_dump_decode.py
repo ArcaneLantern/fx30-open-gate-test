@@ -72,6 +72,22 @@ def main():
     check(f["sensor_variant"] == "A (ogsq_fx30_v2)" and (w["first_pdaf_row"], w["readout_line_periods"]) == (121, 2014), "the default design is read as variant A (121, 2014)")
     f, d = emulated()
     check(f["sensor_variant"] == "stock", "a stock camera is read as holding no sensor design")
+    # the 5.7K state, read by its own dump (dump57) and by the ordinary one
+    F.WHICH = "dump57"
+    r, text = emu_fx30.run((HERE / "libJit_fx30_dump57.so").read_bytes(), **dict(emu_fx30.K57, applied=True, movie=True))
+    assert not r.bad, r.bad
+    f = F.check_result(text.encode())["s3"]
+    d = f["decoded"]
+    sizes = d["size_table"]
+    check(f["ready"] and not f["problem_lines"] and d["sensor_vs_record"]["agree"] is True and d["sensor_vs_record"]["sensor"] == OPEN
+          and [5760, 3840, 0x43F] in sizes and all(s["state"] == "TARGET" for s in f["coprocessor_sites"] if s["name"].startswith(("record_", "outsize")) and "guard" not in s["name"])
+          and f["avcam_target"] == 296 and f["avcam_other"] == 0 and all(v == "applied (NTSC)" for v in f["stored_records"].values()),
+          "the 5.7K state read by dump57: READY, the 5.7K records and five output words TARGET, 296 encoder sites TARGET, size table 5760x3840 id 0x43f, sensor and records agree")
+    F.WHICH = "dump"
+    r, text = emu_fx30.run((HERE / "libJit_fx30_dump.so").read_bytes(), **dict(emu_fx30.K57, applied=True, movie=True))
+    f = F.check_result(text.encode())["s3"]
+    check(not f["ready"] and f["decoded"]["sensor_vs_record"]["agree"] is True and f["sensor_variant"] == "A (ogsq_fx30_v2)",
+          "the 5.7K state read by the ordinary dump: NOT READY (its records and encoder sites are not the 4K ones), sensor and records still agree")
     f, d = emulated(applied=True, movie=True, sensor="ogsq_fx30_v1")
     sv = d["sensor_vs_record"]
     check(sv["agree"] is False and sv["sensor"] == STOCK and sv["record"] == V1 and d["sensor_window"]["state"] == "stock 4K window"

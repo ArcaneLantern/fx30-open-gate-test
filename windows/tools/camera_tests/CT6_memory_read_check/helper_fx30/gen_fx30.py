@@ -14,6 +14,11 @@ camera except the addresses listed at the top of this file.
     bytes in them, so they need not equal the emulated ones; the check prints their bytes and the PC reads the design offsets.
   - The output-size words are soft (zero until a movie mode has run), the screen words soft (the screen step is optional).
 Also writes fx30_expected.json (what the PC checks against) and fx30_reference.json (what the PC needs to read a dump). Read-only on the inputs.
+
+  C:\\Python313\\python.exe -B gen_fx30.py --57      (2026-11-28) the 5.7K twin: fx30_expected57.h / .json and fx30_reference57.json, with the 5.7K designs
+  as the targets (og57n_fx30_v1, og57cp_fx30_v1, ogfile57r300m1_fx30_v4). The same source builds a second pair of libraries from it (build_fx30.sh
+  check57 | dump57), so a camera in the 5.7K state reads as READY; the ordinary pair calls its records and encoder sites OTHER. No variant-B
+  alternates there (the 5.7K state uses the default sensor cells).
 """
 import hashlib
 import json
@@ -28,7 +33,9 @@ DES = ROOT / "modding/designs"
 sys.path.insert(0, str(ROOT / "build"))
 
 BASE = 0x108000
-LABEL = "fx30read_v2"
+K57 = "--57" in sys.argv
+LABEL = "fx30read_v2 5.7K" if K57 else "fx30read_v2"
+SUF = "57" if K57 else ""
 CP_LO, CP_HI = 0xC0000, 0x2700000                     # coprocessor addresses a read may have: its logs, image and RAM tables
 AVCAM_PHYS, AVCAM_RESERVE = 0x401000000, "@0x401000000"   # kemco: memrsv=0x01000000@0x401000000:ex, as the FX3 (FX30_PORT_ENCODER.md)
 ID_FILES = {"/libmpr.so": "nflasha15/lib/libmpr.so", "/libsencore.so": "nflasha15/lib/libsencore.so", "/libJiritsu.so": "nflasha15/lib/libJiritsu.so"}
@@ -45,6 +52,8 @@ RECS, REC = 0x20D93A4, 0x160
 SIZE_TABLE = 0x155D40C
 DESIGNS = ("ogsq_fx30_v2", "outsz2560_fx30_v1", "ogfile2560_hs_s_fx30_v2", "lcd32dsq_fx30_v1", "avdec8k_fx30_v1")
 VARIANT_B = "ogsq_fx30_v2b"
+if K57:
+    DESIGNS = ("og57n_fx30_v1", "og57cp_fx30_v1", "ogfile57r300m1_fx30_v4", "lcd32dsq_fx30_v1", "avdec8k_fx30_v1")
 UNIT, DESC, DSIZE, CLIP, NDESC = 0x3926B8, 0x392758, 0x90, 0x39061C, 689    # build_ogfile.OTHER_BUILDS["fx30_601"] (FX30_PORT_ENCODER.md)
 # The pages the dump reads beyond the display pages (taken from the screen design's sites and guards below, one page each):
 DUMP_FIXED = (("shadow", 0x1123000, 2), ("matrix", 0x1038000, 2), ("sizetable", 0x155D000, 1), ("records", 0x20D9000, 3),
@@ -84,7 +93,12 @@ def main():
                f'#define AVCAM_RESERVE "{AVCAM_RESERVE}"')
     out.append("struct id_file { const char *name; unsigned char sha256[32]; };\nstruct id_page { unsigned int address; unsigned char sha256[32]; };\n"
                "struct cp_site { const char *name; unsigned int address, length; const unsigned char *stock, *target; int soft; const unsigned char *alt; };\n"
-               "struct mp_site { unsigned long offset; unsigned int length; const unsigned char *stock, *target; };\n"
+               + ("/* packed: a library is one upload packet (65,520 bytes at most) and the 5.7K designs have 310 encoder-side sites; a site's stock\n"
+                  "   bytes are at mp_blob[at], its target bytes right after them. No pointers: nothing to relocate. */\n"
+                  "struct mp_site { unsigned int offset; unsigned short at; unsigned char length; };\n"
+                  "#define MP_STOCK(e) (mp_blob + (e)->at)\n#define MP_TARGET(e) (mp_blob + (e)->at + (e)->length)\n" if K57 else
+                  "struct mp_site { unsigned long offset; unsigned int length; const unsigned char *stock, *target; };\n"
+                  "#define MP_STOCK(e) ((e)->stock)\n#define MP_TARGET(e) ((e)->target)\n") +
                "struct av_guard { const char *name; unsigned long offset; unsigned int length; unsigned char sha256[32]; };\n"
                "struct dump_range { const char *name; unsigned int address, pages; };")
     rows = [f'    {{"{n}", {c_bytes(hashlib.sha256((EX / p).read_bytes()).digest())}}},' for n, p in ID_FILES.items()]
@@ -105,7 +119,7 @@ def main():
         else:
             name = "record_left" if "left" in p["note"] else "record_right"
         sites.append((name, a, old, new, 0))
-        if newb[p["addr"]] != new:
+        if newb[p["addr"]] != new and not K57:
             alt[name] = newb[p["addr"]]
     ids = list(struct.unpack_from("<%dI" % NMODES, cp, IDS - BASE))
     for m, sr in og["stored_records"].items():            # soft: computed at start-up, run-time bytes; the PC reads the design offsets
@@ -113,9 +127,10 @@ def main():
         sites.append((f"stored_record_{m}", RECS + sr["index"] * REC, bytes.fromhex(sr["ntsc"]["stock"]), bytes.fromhex(sr["ntsc"]["design"]), 1))
         srb = ogb["stored_records"][m]
         assert srb["index"] == sr["index"] and srb["offsets_that_differ"] == sr["offsets_that_differ"] and srb["ntsc"]["stock"] == sr["ntsc"]["stock"]
-        alt[f"stored_record_{m}"] = bytes.fromhex(srb["ntsc"]["design"])
-    for s in oz["sites"]:                                 # soft: the size table is zero until a movie mode has run
-        sites.append(("outsize", int(s["ram_address"], 16), bytes.fromhex(s["old"]), bytes.fromhex(s["new"]), 1))
+        if not K57:
+            alt[f"stored_record_{m}"] = bytes.fromhex(srb["ntsc"]["design"])
+    for k, s in enumerate(oz["sites"]):                   # soft: the size table is zero until a movie mode has run (5.7K: five words, the last the size)
+        sites.append(("outsize" if len(oz["sites"]) == 1 else f"outsize{k}", int(s["ram_address"], 16), bytes.fromhex(s["old"]), bytes.fromhex(s["new"]), 1))
     for k, g in enumerate(oz["guards"]):
         sites.append((f"outsize_guard{k}", int(g["ram_address"], 16), bytes.fromhex(g["bytes"]), None, 1))
     for k, s in enumerate(sc["sites"]):                   # soft: the screen step is optional (apply --no-screen); reported, not counted
@@ -133,20 +148,29 @@ def main():
         rows.append(f'    {{"{name}", {a:#x}, {len(old)}, {blob(old)}, {blob(new) if new is not None else "0"}, {soft}, {blob(alt[name]) if name in alt else "0"}}},')
     out.append("static const struct cp_site cp_sites[] = {\n" + "\n".join(rows) + "\n};")
     # ---- main-processor sites: the encoder side (hard), then the optional playback step's av-cam words (their own state, see below)
-    lmr, avr, av_hi = [], [], 0
+    lmr, avr, av_hi, mpblob = [], [], 0, bytearray()
     for p in fl["patches"]:
         o, old, new = int(p["file_off"], 16), bytes.fromhex(p["old"]), bytes.fromhex(p["new"])
         src = lm if p["binary"] == "libmpr.so" else av
         assert src[o:o + len(old)] == old
-        (lmr if p["binary"] == "libmpr.so" else avr).append(f"    {{{o:#x}UL, {len(old)}, {blob(old)}, {blob(new)}}},")
+        if K57:
+            (lmr if p["binary"] == "libmpr.so" else avr).append(f"    {{{o:#x}U, {len(mpblob)}, {len(old)}}},")
+            mpblob += old + new
+            assert len(mpblob) < 0x10000 and len(old) < 256 and o < 1 << 32
+        else:
+            (lmr if p["binary"] == "libmpr.so" else avr).append(f"    {{{o:#x}UL, {len(old)}, {blob(old)}, {blob(new)}}},")
         if p["binary"] == "av-cam.bin":
             av_hi = max(av_hi, o + len(old))
+    if K57:
+        out.append("static const unsigned char mp_blob[] = " + c_bytes(mpblob) + ";")
     out.append("static const struct mp_site lm_sites[] = {\n" + "\n".join(lmr) + "\n};")
     out.append("static const struct mp_site av_sites[] = {\n" + "\n".join(avr) + "\n};")
     spans = [(int(p["file_off"], 16), len(p["old"]) // 2) for p in fl["patches"] if p["binary"] == "av-cam.bin"]
     free = lambda k: all(DESC + DSIZE * (k + 4) <= so or so + sn <= DESC + DSIZE * k for so, sn in spans)
     d0 = next(k for k in range(NDESC - 4) if free(k))
-    guards = (("unit_rows_0_2", UNIT, 0x30), ("clip_rows_2_7", CLIP + 0x20, 0x60), (f"descriptors_{d0}_{d0 + 3}", DESC + DSIZE * d0, 4 * DSIZE))
+    # the 5.7K encoder design rewrites clip-format row 3 (the unused 8192x4320 row): its guard is rows 4 to 7
+    clip_guard = ("clip_rows_4_7", CLIP + 0x40, 0x40) if K57 else ("clip_rows_2_7", CLIP + 0x20, 0x60)
+    guards = (("unit_rows_0_2", UNIT, 0x30), clip_guard, (f"descriptors_{d0}_{d0 + 3}", DESC + DSIZE * d0, 4 * DSIZE))
     rows = []
     for name, o, n in guards:
         assert all(o + n <= so or so + sn <= o for so, sn in spans), name
@@ -165,7 +189,7 @@ def main():
     out.append("#if DUMP\nstatic const struct dump_range dump_ranges[] = {\n" + "\n".join(rows) + "\n};\n#endif")
     text = ("/* Generated by gen_fx30.py from the FX30 6.01 files and the port designs. Do not edit. */\n#ifndef DUMP\n#define DUMP 0\n#endif\n"
             + "\n".join(blobs) + "\n" + "\n".join(out) + "\n")
-    (HERE / "fx30_expected.h").write_text(text, encoding="utf8", newline="\n")
+    (HERE / f"fx30_expected{SUF}.h").write_text(text, encoding="utf8", newline="\n")
     facts = {"label": LABEL, "cp_lo": CP_LO, "cp_hi": CP_HI, "avcam_phys": AVCAM_PHYS, "avcam_reserve": AVCAM_RESERVE,
              "id_files": {n: hashlib.sha256((EX / p).read_bytes()).hexdigest() for n, p in ID_FILES.items()},
              "id_pages": {hex(a): hashlib.sha256(cp[a - BASE:a - BASE + 4096]).hexdigest() for a in ID_PAGES},
@@ -173,7 +197,7 @@ def main():
              "variant_b_sites": sorted(alt),
              "lm_sites": len(lmr), "av_sites": len(avr), "av_guards": [g[0] for g in guards], "dump_ranges": [[n, hex(a), k] for n, a, k in dump_ranges],
              "designs": {d["design"]: hashlib.sha256((DES / (d["design"] + ".json")).read_bytes()).hexdigest() for d in (og, ogb, oz, fl, sc, ad)}}
-    (HERE / "fx30_expected.json").write_text(json.dumps(facts, indent=1) + "\n", encoding="utf8", newline="\n")
+    (HERE / f"fx30_expected{SUF}.json").write_text(json.dumps(facts, indent=1) + "\n", encoding="utf8", newline="\n")
     # ---- what the PC needs to read a dump without the firmware files
     matrix = []
     for k in range(MATRIX_ROWS):
@@ -207,8 +231,11 @@ def main():
            "ram": {"resize_result_predicted": "0x1571ec4 (A7 IV 0x145091c, not confirmed: the dump decoder searches 0x1571000.. for known sizes)",
                    "resize_settings": "0x1573a30", "resize_work": "0x12ddef8", "shadow_base": hex(SHADOW0)}}
     assert len(ref["emulated_stock_records"]) == NMODES
-    (HERE / "fx30_reference.json").write_text(json.dumps(ref) + "\n", encoding="utf8", newline="\n")
-    print(f"fx30_expected.h: {len(sites)} coprocessor sites ({len(sc['sites'])} of the screen, 5 stored records), "
+    if K57:
+        ref.pop("stored_records_design_b"), ref.pop("variant_b")
+        ref["state"] = {"name": "5.7K", "front_end": og["summary"]["front_end"], "output": oz["summary"]["output_size"], "designs": list(DESIGNS[:3])}
+    (HERE / f"fx30_reference{SUF}.json").write_text(json.dumps(ref) + "\n", encoding="utf8", newline="\n")
+    print(f"fx30_expected{SUF}.h: {len(sites)} coprocessor sites ({len(sc['sites'])} of the screen, 5 stored records), "
           f"{len(lmr)} libmpr sites, {len(avr)} av-cam sites, {len(dump_ranges)} dump ranges, {len(text)} bytes of header")
 
 

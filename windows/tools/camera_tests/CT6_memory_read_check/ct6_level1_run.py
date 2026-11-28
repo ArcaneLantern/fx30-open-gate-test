@@ -32,6 +32,10 @@ build/nrs_state.py decodes it: the switch, the gain and table row in use, the re
 --level 35 is read-only: 120 transfers from coprocessor memory, the display state (the memory its display driver, display framework and
 InfraBB video code address directly; F1067, modding/TONE12_TEST.md). Two reads, with Gamma Display Assist off and on, are compared by
 camera_tests/CT6_memory_read_check/disp_compare.py to find what follows the setting.
+--level 39 is read-only: 17 transfers from coprocessor memory, the MBL state (the second movie noise-reduction stage: its CCNR / YKNR /
+box / KKNR / CP tables, the on/off byte of each box, the debug flags and the job's debug copies, the face slots, the movie settings;
+F1214, request 90, modding/NR_TEST.md). build/mbl_state.py decodes it: on/off by box, the boxes the selector can give, Soft Skin and
+Clarity, whether debug flag 0x1e is on, and (when it is) the live box, class, gain and block.
 --level 10 is read-only: 64 transfers from coprocessor memory, its kprint log (0xe0000, 128 KB, kept across a restart without power loss)
 and its boot-time log (0xc0000, 128 KB), saved as cp_kprint.bin and cp_boottime.bin in the private session folder.
 --level 12 is read-only: about 90 transfers from coprocessor memory, the state of its memory manager (reference/dmm_memory_manager.md): the page of
@@ -55,6 +59,13 @@ own process has it mapped. Each site is reported as stock, target or other; the 
 each write checked against the kernel's own view) and in libmpr.so in the camera's own process (through /proc/self/mem). --level 20 puts the stock
 bytes back. Nothing is written unless every guard is as in the file and every site holds one of the two sets of bytes; on a failure everything the
 run wrote is put back. A cold boot also undoes it.
+--level 36 is read-only and touches the main processor only: what each site of a menu design holds now in the camera's own process (im.elf),
+read through /proc/self/mem: --design dsqmenu_v2 (appFw.so: option rows, the De-Squeeze Display leaf, five relocated pointers, one std::map value,
+the code block if one is in place) or dsqlabel_v1 (one English text record). The verdict is READY, APPLIED, PARTLY APPLIED or NOT READY.
+--level 37 WRITES MAIN-PROCESSOR MEMORY (modding/DSQMENU_V2.md): those sites, through /proc/self/mem; for dsqmenu_v2 it first maps the code block
+(read+execute, plus a read+write data page) in im.elf. --level 38 puts the stock bytes back (the block stays mapped, unused). Nothing is written unless
+every guard is as in the file and every site holds one of the two sets of bytes; on a failure everything the run wrote is put back. A cold boot (battery
+out) also undoes it; the power switch does not.
 --level 8 is read-only: level 7, then what each of the 14 sites holds and five pieces of the coprocessor's working state.
 --level 7 is read-only: it follows three pointers in coprocessor memory and copies out the stored drive-parameter records of two modes.
 --level 4 is different in kind: it WRITES 64 bytes into unused padding in coprocessor memory (0xf31f00), reads them back and writes zeros back.
@@ -128,6 +139,10 @@ LIBS = {1: ("libJit_level1.so", "70b2695e917a19e05ca15f674f1260dab6e19f479bb963a
         # directly, 21 ranges, 491,520 bytes, and the camera core's context; F1067, modding/TONE12_TEST.md; level 15's code, its own
         # ranges; build/disp_state.py holds the table and compares two reads)
         35: ("libJit_level35.so", "ea28cd97907790a6ea7941c4e70f3d6eb75e2957990692868611111a3e087c6c"),
+        # level 39 is read-only: the MBL state (the second movie noise-reduction stage's run-time tables 0x12b6000+0x2000 and
+        # 0x149d000+0x5000, the debug flags 0x1296000, the job's debug copies 0x1a4d000+0x3000, face slots, settings, camera context and
+        # core context; F1214, request 90; level 15's code, its own ranges; build/mbl_state.py decodes it)
+        39: ("libJit_level39.so", "b8de6084709b1688ff6756f42aad14be46e3315d2f1c5afca6c7783c1da44baa"),
         # level 22 is read-only, main processor only: the VCD codec's clock word, its window registers and its program area (stage V2)
         22: ("libJit_level22.so", "ae7c5d2018a500ffbc1b157ecba8a6070d0ecb0f2a285d811f6b8bb29091c10d"),
         # level 26 is read-only, main processor only: the VCD program area as plain memory (F780), before any code of ours runs there
@@ -635,6 +650,33 @@ DESIGN_LIBS["log12w_v1"] = {16: ("libJit_level16_log12w_v1.so", "83575d54f648d09
                             17: ("libJit_level17_log12w_v1.so", "44642dd983f7e9a314623d6ec0a4f137925ff77be079d8504005143ba50337db")}
 DESIGN_LIBS["disp12n_log12w_v1"] = {16: ("libJit_level16_disp12n_log12w_v1.so", "9ba98dd3f572997b00c12287433169901033b374466659c57fb34e7ae84e1f85"),
                                     17: ("libJit_level17_disp12n_log12w_v1.so", "01be9e74b9c883ad23a63ac5d547f4c3a26c5974fc8b14c597a1f3314d53fd4e")}
+# dsqmenu_v2 and dsqlabel_v1 (2026-11-27, build/build_dsqmenu_v2.py, F1211, modding/DSQMENU_V2.md): Sony's De-Squeeze Display item as our own
+# rear-screen preview setting (3:2 / 2:1 / 2.25:1 / 2.39:1, movie only), and its optional English label '2.25:1'. Level 36 checks (read-only),
+# 37 applies, 38 puts back; everything in im.elf through /proc/self/mem (helper/emu_pb.py).
+# 2026-11-28: rebuilt with the dsqmenu_v3 helper (a list of tree values, label slots, the first segment put back last to first); the builds that ran
+# on the camera on 2026-11-27 (request 91) were 36 b1beaeac, 37 738b0bd6, 38 6da3f727 (dsqmenu_v2) and 37 0f15b74f (dsqlabel_v1).
+DESIGN_LIBS["dsqmenu_v2"] = {36: ("libJit_level36_dsqmenu_v2.so", "a82cd5129d8f5acea5870203a715fa81ccd454f86e7dd86f250f615f429ab751"),
+                             37: ("libJit_level37_dsqmenu_v2.so", "71d8750e8c83a6195299d09ad78347dcf0f834c95468b62e9c5b469c8fd10e8d"),
+                             38: ("libJit_level38_dsqmenu_v2.so", "cacbce6d02f8b96b5cbb28547d2de7cc31f69d0683fc5c08691d166bbc129be5")}
+DESIGN_LIBS["dsqlabel_v1"] = {36: ("libJit_level36_dsqlabel_v1.so", "9bda5eb109f51da33f87518d0a66e9511544a590ad84ff215cf3a3ee061fbdfb"),
+                              37: ("libJit_level37_dsqlabel_v1.so", "41d93c8b365cc86a141e7ce96473131c5fb12ec92d49d28bce6bafeea9ec56c1"),
+                              38: ("libJit_level38_dsqlabel_v1.so", "9009a7c3a9e2f45f4ae644b41535806a04b651b6191d7bf02aea1e536d2e8961")}
+# dsqmenu_v3 (2026-11-28, build/build_dsqmenu_v3.py, F1218-F1220, modding/DSQMENU_V3.md): dsqmenu_v2 plus the four per-choice inhibit slots
+# (choices selectable), the label '2.25:1' as a runtime text record the block makes (two label slots), and the item in the movie custom-key
+# lists (table entry, borrowed key events, two event-tree values). Supersedes dsqmenu_v2 and dsqlabel_v1.
+DESIGN_LIBS["dsqmenu_v3"] = {36: ("libJit_level36_dsqmenu_v3.so", "8daca9794d7ee345a5fa20d680e0da06bed524def7f1b20ae6a10c4baf1a860c"),
+                             37: ("libJit_level37_dsqmenu_v3.so", "ab5849eac30db27065c4c0d5a25911d9be1a52177dd91574ca82f8c0e51a53ee"),
+                             38: ("libJit_level38_dsqmenu_v3.so", "41bff60a9c1ac58199f00b4dc8990efb502e4cc840e75a1aae5a2cee28736a7a")}
+# dsqmenu_v4 (2026-11-28, build/build_dsqmenu_v4.py, F1223, modding/DSQMENU_V4.md): dsqmenu_v3 with the key screen fixed (+0x24 = 0xd4, F1223) and
+# three more choices for an anamorphic lens turned 90 degrees (pillarbox, fit 2; borrowed Angle options 1645-1643). Supersedes dsqmenu_v3.
+DESIGN_LIBS["dsqmenu_v4"] = {36: ("libJit_level36_dsqmenu_v4.so", "471f527886d12e79b55a9275af580a0ba5666053a52c20e8edb3ba771ffd27fd"),
+                             37: ("libJit_level37_dsqmenu_v4.so", "2420824d66e855a297d8712edcb7e61f86a782f62d9005a40fc737fe26feead5"),
+                             38: ("libJit_level38_dsqmenu_v4.so", "d72db2c8ee1b254a6f50cb43cf3e5eaef55e857ad0d397179763475647b32191")}
+# dsqmenu_v5 (2026-11-28, build/build_dsqmenu_v5.py, F1236, modding/DSQMENU_V5.md): dsqmenu_v4 (works, F1225) with shorter turned-lens labels
+# "1.33V" / "1.5V" / "1.6V" that fit the custom key's selector column (F1235); the same sites; block magic 'DSQ5'. Supersedes dsqmenu_v4.
+DESIGN_LIBS["dsqmenu_v5"] = {36: ("libJit_level36_dsqmenu_v5.so", "5497d99c80c054d28371244fb9490feb8fbf8b0bf83d6292820652f044795070"),
+                             37: ("libJit_level37_dsqmenu_v5.so", "f9dd42ef433700dbbe78151f0deb513418cd6a771be6fdd124d369de92661dbf"),
+                             38: ("libJit_level38_dsqmenu_v5.so", "d98c03b06e962eb5b57e81d948229f45b7039e0e268811584542463b3d0f4538")}
 LEVEL = 1
 LIB = HERE / "helper" / LIBS[1][0]
 LIB_SHA256 = LIBS[1][1]
@@ -984,6 +1026,21 @@ def check_result(data):
                             **{k: dec.get(k) for k in ("drive_mode_id", "output_size", "bytes", "all_zero_ranges")},
                             "decode_problems": dec.get("problems"), "report": disp_state.report(dec).split("\n")}
         facts["_out_ranges"], facts["_out_decoded"] = ranges, dec
+    if LEVEL == 39:
+        sys.path.insert(0, str(HERE.parent.parent / "build"))
+        import mbl_state
+        ranges = mbl_state.parse_result(data)
+        part = data.split(b"== level 39:", 1)[1] if b"== level 39:" in data else b""
+        dec = mbl_state.decode(ranges)
+        facts["level39"] = {"complete": b"\nlevel 39 complete\n" in data, "released": data.count(b"\nbuffer released\n"),
+                            "problems": [m.decode() for m in re.findall(rb"^!! .*$", re.sub(rb"== cp range \w+ at 0x[0-9a-f]{8} raw (\d+) bytes follow\n(?s:.*?)\n== cp range end\n", b"", part), re.M)],
+                            "ranges": {n: {"address": "0x%08x" % a, "bytes": len(b), "sha256": c.sha256(b)} for n, (a, b) in ranges.items()},
+                            **{k: dec.get(k) for k in ("drive_mode_id", "output_size", "bytes", "settings_block", "soft_skin_effect", "clarity", "mode_id",
+                                                       "debug_flag_0x1e_on", "debug_copies_present", "tables_loaded", "tables_sha256", "on_off_by_box",
+                                                       "boxes_selector_a_can_give", "box_selector_b_flag_0x149e8f8", "all_zero_ranges")},
+                            "live": {k: v for k, v in (dec.get("live") or {}).items() if k != "block_copy_hex"},
+                            "decode_problems": dec.get("problems"), "report": mbl_state.report(dec).split("\n")}
+        facts["_out_ranges"], facts["_out_decoded"] = ranges, dec
     if LEVEL in (13, 14):
         head = re.search(rb"^== level 1[34]: (apply|put back) the four memory-manager words of (\S+)$", data, re.M)
         part = data[head.start():] if head else b""
@@ -1207,6 +1264,42 @@ def check_result(data):
                             "libmpr_mapping": {"start": where.group(1).decode(), "end": where.group(2).decode(), "permissions": where.group(3).decode()} if where else None,
                             "not_stock": [b" ".join(l).decode() for l in lines if l[5] in (b"DIFFERS", b"TARGET", b"OTHER")],
                             "problems": [m.decode().strip() for m in re.findall(rb"^.*!! .*$", part, re.M)]}
+    if LEVEL in (36, 37, 38):
+        head = re.search(rb"^== level (?:36|37|38): (check \(read-only\)|apply|put back) the sites of (\S+) in (\S+)$", data, re.M)
+        part = data[head.start():] if head else b""
+        ents = re.findall(rb"^  (seg0|data) (site|guard) (0x[0-9a-f]+) (\d+) (SAME|DIFFERS|STOCK|TARGET|OTHER) ([0-9a-f]*)$", part, re.M)
+        ptrs = re.findall(rb"^  ptr (0x[0-9a-f]+) (0x[0-9a-f]+) (STOCK|TARGET \(the block\)|OTHER)$", part, re.M)
+        trees = re.findall(rb"^  tree (0x[0-9a-f]+) key (\d+) node (0x[0-9a-f]+) value (-?\d+) (STOCK|TARGET|OTHER)$", part, re.M)
+        labels = re.findall(rb"^  seg0 label (0x[0-9a-f]+) (\d+) (FILE|RUNTIME|OTHER) ([0-9a-f]*)$", part, re.M)
+        blk = re.search(rb"^block (?:in place|made) at (0x[0-9a-f]+)(?:, data (0x[0-9a-f]+): staged (\d+) gets (\d+) commits (\d+) last (\d+)"
+                        rb"(?: label (\d+) id (0x[0-9a-f]+))?)?", part, re.M)
+        where = re.search(rb"^(\S+) mapped at (0x[0-9a-f]+)-(0x[0-9a-f]+) (\S+)$", part, re.M)
+        verdict = re.search(rb"^== level 36 verdict: (READY|APPLIED|PARTLY APPLIED|NOT READY): ", part, re.M)
+        tally = lambda kind: {w.lower(): sum(1 for e in ents if e[1] == kind and e[4] == w.encode()) for w in (("STOCK", "TARGET", "OTHER") if kind == b"site" else ("SAME", "DIFFERS"))}
+        facts["level3638"] = {"verb": head.group(1).decode() if head else None, "design": head.group(2).decode() if head else None,
+                              "library": head.group(3).decode() if head else None,
+                              "mapping": {"start": where.group(2).decode(), "end": where.group(3).decode(), "permissions": where.group(4).decode()} if where else None,
+                              "sites": tally(b"site"), "guards": tally(b"guard"),
+                              "pointers": {w: sum(1 for q in ptrs if q[2].startswith(w.upper().encode())) for w in ("stock", "target", "other")},
+                              "trees": [{"container": c.decode(), "key": int(k), "node": n.decode(), "value": int(v), "state": s.decode()} for c, k, n, v, s in trees],
+                              "labels": {w.lower(): sum(1 for q in labels if q[2] == w.encode()) for w in ("FILE", "RUNTIME", "OTHER")},
+                              "block": ({"at": blk.group(1).decode(), "data": blk.group(2).decode() if blk.group(2) else None,
+                                         "counters": [int(blk.group(k)) for k in (3, 4, 5, 6)] if blk.group(2) else None,
+                                         "label": int(blk.group(7)) if blk.group(7) else None, "label_id": blk.group(8).decode() if blk.group(8) else None}
+                                        if blk else None),
+                              "block_made": b"\nblock made at " in part,
+                              "verdict": verdict.group(1).decode() if verdict else None,
+                              "checks_passed": b"\nchecks passed: every guard is as in the file, " in part,
+                              "written": len(re.findall(rb"^(?:seg0 site|seg0 label|data site|ptr|tree node) 0x[0-9a-f]+: written and read back$", part, re.M)),
+                              "done": b"\nDONE: every site holds the target bytes (" in part, "nothing_to_do": b"\nNOTHING TO DO: " in part,
+                              "undone": b"\nNOT DONE: a step failed; every site this run touched was put back\n" in part,
+                              "undo_incomplete": b"UNDO INCOMPLETE" in part,
+                              "put_back_by_the_undo": len(re.findall(rb"^undo .*: put back$", part, re.M)),
+                              "refused": [m.decode() for m in re.findall(rb"^(!! .*(?:nothing is written|see the lines above))$", part, re.M)],
+                              "not_stock": [b" ".join(e).decode() for e in ents if e[4] in (b"DIFFERS", b"TARGET", b"OTHER")]
+                                           + [b" ".join(q).decode() for q in ptrs if not q[2].startswith(b"STOCK")]
+                                           + ["label " + b" ".join(q).decode() for q in labels if q[2] != b"FILE"],
+                              "problems": [m.decode().strip() for m in re.findall(rb"^.*!! .*$", part, re.M)]}
     if LEVEL == 23:
         head = re.search(rb"^== level 23: the codec firmware sites of (\S+), read-only$", data, re.M)
         part = data[head.start():] if head else b""
@@ -1463,6 +1556,12 @@ def body_run(session, camera, lib):
                                                          "; reported: " + "; ".join(f["problems"]) if f["problems"] else ""))
         for line in f["report"]:
             session.say("  " + line)
+    if LEVEL == 39:
+        f = facts["level39"]
+        session.say("Level 39: %s; %d ranges copied%s" % ("complete" if f["complete"] else "NOT complete", len(f["ranges"]),
+                                                         "; reported: " + "; ".join(f["problems"]) if f["problems"] else ""))
+        for line in f["report"]:
+            session.say("  " + line)
     if LEVEL == 21:
         f = facts["level21"]
         session.say("Level 21: %s; %d ranges copied (%s)%s" % ("complete" if f["complete"] else "NOT complete", len(f["ranges"]),
@@ -1509,6 +1608,36 @@ def body_run(session, camera, lib):
                        f["as_expected"], f["already"], f["written"], "; reported: " + "; ".join(f["problems"]) if f["problems"] else ""))
         if f["undo_incomplete"]:
             session.say("!! THE UNDO DID NOT COMPLETE: THE CODEC FIRMWARE COPY MAY BE PARTLY CHANGED. Cold boot the camera now (battery out for 10 seconds) before anything else.")
+    if LEVEL in (36, 37, 38):
+        f = facts["level3638"]
+        s_, g_, p_, w = f["sites"], f["guards"], f["pointers"], f["mapping"]
+        if LEVEL == 36:
+            state = "verdict %s" % (f["verdict"] or "MISSING")
+        else:
+            state = ("DONE: every site holds the target bytes" if f["done"] else "nothing to do: every site already held the target bytes" if f["nothing_to_do"]
+                     else "NOT DONE, and everything touched was put back" if f["undone"] else "REFUSED before any write" if f["refused"] else "NOT DONE")
+        session.say("Level %d (%s, %s in %s%s): %s. Guards %d as in the file, %d not; sites %d stock, %d target, %d other%s%s%s"
+                    % (LEVEL, f["verb"], f["design"], f["library"], " at %s-%s %s" % (w["start"], w["end"], w["permissions"]) if w else " (NOT MAPPED)", state,
+                       g_["same"], g_["differs"], s_["stock"], s_["target"], s_["other"],
+                       "; pointers %d stock, %d to the block, %d other" % (p_["stock"], p_["target"], p_["other"]) if sum(p_.values()) else "",
+                       "; tree values %s" % ", ".join("%d (%s)" % (x["value"], x["state"]) for x in f["trees"]) if f["trees"] else "",
+                       "; %d written and read back" % f["written"] if LEVEL != 36 else ""))
+        if f["block"]:
+            b = f["block"]
+            session.say("  code block %s at %s%s%s" % ("made" if f["block_made"] else "in place", b["at"],
+                        ", data %s: staged %d, menu reads %d, commits %d, last state %d" % (b["data"], *b["counters"]) if b["counters"] else "",
+                        "; label %s%s" % ({0: "not made yet (the menu has not called the block)", 1: "made", 2: "not made: libObj not found or not the 6.02 code",
+                                           3: "not made: libObj made no record", 4: "not made: row 3275 not as expected", 5: "not written: /proc/self/mem",
+                                           9: "being made"}.get(b["label"], "code %d" % b["label"]),
+                                          " (text id %s)" % b["label_id"] if b["label"] == 1 else "") if b.get("label") is not None else ""))
+        if sum(f["labels"].values()):
+            session.say("  label slots: %d with the file's text, %d with a runtime text id, %d other" % (f["labels"]["file"], f["labels"]["runtime"], f["labels"]["other"]))
+        for line in f["not_stock"][:24]:
+            session.say(("  not stock: " if LEVEL == 36 else "  not stock before the writes: ") + line)
+        if f["problems"]:
+            session.say("  reported: " + "; ".join(f["problems"][:8]))
+        if f["undo_incomplete"]:
+            session.say("!! THE UNDO DID NOT COMPLETE: MAIN-PROCESSOR MEMORY MAY BE PARTLY CHANGED. Cold boot the camera now (battery out for 10 seconds) before anything else.")
     if LEVEL in (19, 20):
         f = facts["level1920"]
         state = ("DONE: every site holds the target bytes" if f["done"] else "nothing to do: every site already held the target bytes" if f["nothing_to_do"]
@@ -1714,6 +1843,9 @@ def run_helper(data):
     if LEVEL == 35:
         files["/dev/mem"] = b""
         cp = emu_built.disp_model()[1]                     # an address pattern, with the camera core's drive mode in the context
+    if LEVEL == 39:
+        files["/dev/mem"] = b""
+        cp = emu_built.mbl_model()[1]                      # an address pattern, with settings, on/off bytes, debug flag 0x1e on and a debug copy
     if LEVEL == 34:
         files["/dev/mem"] = b""
         cp = emu_built.nrs_model()[1]                      # the spatial stage's state with known flags, aux, buffers, setters and one table
@@ -1771,6 +1903,13 @@ def run_helper(data):
         t_ld = emu_built.mp_ld_table(DESIGN)
         if t_ld:                                           # MP_LD (dsqmenu_v1): the process also holds appFw.so's r--p mapping, as the camera's im.elf does
             own[lbase + emu_built.LD_VA] = emu_built.ld_memory((c.EXTRACTED / lfile).read_bytes(), t_ld)
+    if LEVEL in (36, 37, 38):                              # im.elf's memory as the camera showed it, stock (helper/emu_pb.py)
+        import emu_pb
+        files["/proc/self/mem"] = b""
+        run = emu_pb.PbRun(data, LEVEL, files, dirs, emu_pb.camera(DESIGN)).go()
+        if run.bad:
+            raise AssertionError("emulated helper: " + run.bad)
+        return run.writes[emu_built.RESULT], "emulated"
     if LEVEL == 27:                                        # the joint model: the helper drives the codec model, the real MIPS stubs run in it
         files["/dev/mem"] = b""
         model = (emu_built.CodecModel(scratch=True, steps_per_ms=200000) if DESIGN == "hello_v4" else emu_built.CodecModel(regs=True) if DESIGN == "hello_v5"
@@ -1996,6 +2135,12 @@ def selftest(lib):
         check(f["complete"] and not f["problems"] and not f["decode_problems"] and len(f["ranges"]) == 21 and f["released"] == 1
               and f["bytes"] == 491520 and f["drive_mode_id"] == "0x8c0" and not f["all_zero_ranges"],
               "normal run, level 35: 21 ranges of display state copied out (491,520 bytes), with the camera core's drive mode")
+    if LEVEL == 39 and sim.how == "emulated":
+        f = r["result"]["level39"]
+        check(f["complete"] and not f["problems"] and not f["decode_problems"] and len(f["ranges"]) == 9 and f["released"] == 1
+              and f["bytes"] == 69632 and f["settings_block"] == "0x11cf8b8" and f["soft_skin_effect"] == 0 and f["clarity"] == 1
+              and f["debug_flag_0x1e_on"] is True and f["live"].get("box") == 2 and f["on_off_by_box"][:2] == [1, 0] and f["tables_loaded"] is True,
+              "normal run, level 39: nine ranges of MBL state copied out (69,632 bytes) and decoded: settings, debug flag, live box, on/off bytes")
     if LEVEL == 21 and sim.how == "emulated":
         f = r["result"]["level21"]
         check(f["complete"] and not f["problems"] and not f["decode_problems"] and len(f["ranges"]) == 2 and len(f["ports"]) == 25
@@ -2108,6 +2253,24 @@ def selftest(lib):
               and not f["problems"] and not f["not_stock"]
               and f["av_cam"]["same"] and f["libmpr"]["same"] == lm_guards and f["libmpr_mapping"]["permissions"] == "r-xp",
               "normal run, level 18 (%s): %d sites reported stock, every guard as in the file, the verdict is READY" % (DESIGN, n))
+    if LEVEL in (36, 37, 38) and sim.how == "emulated":
+        import json
+        dj = json.loads((HERE.parent.parent / "modding" / "designs" / (DESIGN + ".json")).read_text(encoding="utf8"))
+        n_s = sum(1 for x in dj["patches"] if x.get("kind") != "M-label")
+        n_p, n_t = len(dj.get("pointers", [])), len(dj.get("trees") or ([dj["tree"]] if dj.get("tree") else []))
+        f = r["result"]["level3638"]
+        if LEVEL == 36:
+            check(f["verdict"] == "READY" and f["design"] == DESIGN and f["sites"] == {"stock": n_s, "target": 0, "other": 0} and not f["guards"]["differs"]
+                  and f["pointers"]["stock"] == n_p and len(f["trees"]) == n_t and all(x["state"] == "STOCK" for x in f["trees"]) and not f["problems"] and not f["block"]
+                  and f["labels"]["runtime"] == f["labels"]["other"] == 0,
+                  "normal run, level 36 (%s): %d sites and %d pointers stock, every guard as in the file, no block, the verdict is READY" % (DESIGN, n_s, n_p))
+        if LEVEL == 37:
+            check(f["done"] and f["checks_passed"] and f["written"] == n_s + n_p + n_t and f["block_made"] == bool(n_p) and not f["problems"] and f["verb"] == "apply",
+                  "normal run, level 37 (%s): the checks pass, %d sites, %d pointers and %d tree values written and read back%s, done"
+                  % (DESIGN, n_s, n_p, n_t, ", the code block made" if n_p else ""))
+        if LEVEL == 38:
+            check(f["nothing_to_do"] and f["checks_passed"] is False and not f["written"] and not f["problems"] and f["verb"] == "put back",
+                  "normal run, level 38 on a stock camera (%s): nothing to do, nothing written" % DESIGN)
     if LEVEL == 2 and sim.how == "emulated":
         check(r["result"]["level2"]["same"] == 3 and not r["result"]["level2"]["differs"], "normal run, level 2: three ranges reported equal to the update file")
     check(sim.service_writes[sent(s).index(W)][12 + 7:] == lib, "normal run: the bytes that left are the pinned library")
@@ -2184,12 +2347,14 @@ def main():
     parser.add_argument("--remove-only", action="store_true")
     parser.add_argument("--clear-result", metavar="SHA256", help="before the run, delete the helper's result file from the RAM disk, only if its SHA-256 is this (a result already saved here)")
     parser.add_argument("--clear-only", action="store_true", help="with --clear-result: only delete that file; send no library")
-    parser.add_argument("--level", type=int, choices=sorted(set(LIBS) | {13, 14, 16, 17, 18, 19, 20, 23, 24, 25, 31, 32}), default=1, help="which pinned build to use (default 1)")
+    parser.add_argument("--level", type=int, choices=sorted(set(LIBS) | {13, 14, 16, 17, 18, 19, 20, 23, 24, 25, 31, 32, 36, 37, 38}), default=1, help="which pinned build to use (default 1)")
     parser.add_argument("--design", choices=["og4k_data_v1"] + sorted(DESIGN_LIBS), default="og4k_data_v1",
                         help="for levels 5, 6 and 8: whose site table (default og4k_data_v1); for levels 13 and 14: dmmwb4080_v1 or dmmwb4688_v1; "
                              "for levels 16 and 17: outsz2560_v1, og2560e4_v1, og57cp_v1, og57cp_v2, og57cp_v3, dmmslot8_v1, dmmslot8_v2 or lcdfill_v1; for level 18: ogfile2560_hs_v1, ogfile2560_s_v1, ogfile2560_hs_s_v1, ogfile2560_hs_s_v2, ogfile57_v1, ogfile57r300_v1, ogfile57r300m1_v1, ogfile57r300m1_v2, ogfile57r300m1_v3, ogfile57r300m1_v4, ogfilesi2560_v1, ogfilesi57_v1, ogfilesih57_v1, ogfilesih57p1_v1, ogfilesih57p2_v1 or ogfilesih57p3_v1; "
                              "for levels 19 and 20: ogfile2560_hs_v1, ogfile2560_hs_s_v1, ogfile2560_hs_s_v2, ogfile57_v1, ogfile57r300_v1, ogfile57r300m1_v1, ogfile57r300m1_v2, ogfile57r300m1_v3, ogfile57r300m1_v4, "
-                             "ogfilesi2560_v1, ogfilesi57_v1, ogfilesih57_v1, ogfilesih57p1_v1, ogfilesih57p2_v1 or ogfilesih57p3_v1 (the XAVC S-I 4K step, after the state's own), ogfilesh25_v1 (XAVC S 4K 4:2:2 as HEVC, after the state's own)")
+                             "ogfilesi2560_v1, ogfilesi57_v1, ogfilesih57_v1, ogfilesih57p1_v1, ogfilesih57p2_v1 or ogfilesih57p3_v1 (the XAVC S-I 4K step, after the state's own), ogfilesh25_v1 (XAVC S 4K 4:2:2 as HEVC, after the state's own); "
+                             "for levels 36, 37 and 38: dsqmenu_v5 (the De-Squeeze Display menu item: seven choices incl. turned-lens pillarbox, labels, a movie custom key; "
+                             "v4 with shorter labels), dsqmenu_v4, dsqmenu_v3, or the earlier dsqmenu_v2 / dsqlabel_v1")
     parser.add_argument("--firmware-shown")
     parser.add_argument("--library-sha256", help="the SHA-256 of the library you reviewed; must equal the pinned one")
     args = parser.parse_args()
@@ -2240,7 +2405,7 @@ def main():
                 "yes" if out.get("library_sent") else "no",
                 {False: "no (confirmed)", True: "YES", None: "not sent" if not out.get("library_sent") and not args.remove_only else "UNKNOWN"}[out.get("library_on_camera_after")]))
             print("When this test sequence is over, cold boot the camera (battery out for 10 seconds). A cold boot, or a restart, also undoes "
-                  "whatever levels 5, 13, 16 and 19 wrote: do not cold boot between the steps of one test.")
+                  "whatever levels 5, 13, 16, 19 and 37 wrote: do not cold boot between the steps of one test.")
 
 
 if __name__ == "__main__":

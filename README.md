@@ -1,6 +1,15 @@
 # FX30 open gate: test kit (firmware 6.01)
 
-<p><b>Kit v2 (2026-11-26). v2 has not run on a camera yet.</b> Kit v1 ran on three FX30s and did not work: the cause is found and fixed here (see "What v1 got wrong"). The kit brings the open gate that works on the A7 IV, A7S III and FX3 to the Sony FX30 (ILME-FX30) firmware 6.01. It is meant to record a true 3840 × 2560 picture of the 3:2 area of the FX30's 6K read-out, in XAVC S 4K and XAVC HS 4K at 23.98p (25p on a PAL camera), with MP4 headers that say 3840 × 2560. It also shows the whole picture at 3:2 on the rear screen and sets the FX30's own De-Squeeze Display for it. The patch only writes to the camera's memory: a battery pull removes it.</p>
+<p><b>The 4K open gate of this kit (v2) records on FX30s. New on 2026-11-28: a 5.7K state (5760 × 3840, about 300 Mbps, no B frames), which has not run on any camera yet.</b> Kit v1 did not work: the cause was found and fixed in v2 (see "What v1 got wrong"). The kit brings the open gate that works on the A7 IV, A7S III and FX3 to the Sony FX30 (ILME-FX30) firmware 6.01. It is meant to record a true 3840 × 2560 picture of the 3:2 area of the FX30's 6K read-out, in XAVC S 4K and XAVC HS 4K at 23.98p (25p on a PAL camera), with MP4 headers that say 3840 × 2560. It also shows the whole picture at 3:2 on the rear screen and sets the FX30's own De-Squeeze Display for it. The patch only writes to the camera's memory: a battery pull removes it.</p>
+
+**What testers have reported with v2** (the repo's issues, 2026-11-26/27; NTSC and PAL, firmware 6.01, default sensor variant A):
+
+- **XAVC S 4K at 23.98p and 25p records the whole 3840 × 2560 picture** with right colours and levels; the closing dump says the sensor is programmed for 3968 rows from row 94 and AGREE. Nobody needed variant B.
+- **XAVC HS 4K:** the 4:2:2 10-bit settings restart the camera when recording starts (the patch is gone afterwards). 4:2:0 recorded for some testers. Cause not found yet.
+- **The power switch** removes the image processor's part of the patch after about ten seconds off but leaves the encoder's part: the result is a 16:9 picture in a taller file. After any power-off, pull the battery for ten seconds and apply again.
+- **Autofocus** works in the 16:9 middle; one tester found that the top and bottom strips of the 3:2 frame are not focus areas, and the grid lines cover only the 16:9 area.
+- One tester saw stuck pixels; whether they are there without the patch is not settled.
+- Firmware 6.00 is refused by the check (it is a different build). A contributor runs rebuilt steps on 6.00; that is not part of this kit.
 
 **What v1 got wrong.** On three cameras (NTSC and PAL) every step applied, the camera kept working and the file was 3840 × 2560, but:
 
@@ -45,7 +54,11 @@ The cause, read from a tester's dump and confirmed in the firmware: the FX30 set
 | `open_gate_apply_variant_b.cmd` | **A/B test:** the apply with the sensor step's variant B. Only if the default gives a full picture with wrong colour | **Yes: memory only** |
 | `open_gate_switch_to_b.cmd` | **A/B test:** after a normal apply in the same power-on, changes only the sensor step to variant B | **Yes: memory only** |
 | `open_gate_switch_to_a.cmd` | **A/B test:** changes the sensor step back from variant B to the default | **Yes: memory only** |
-| `open_gate_putback.cmd` | Puts the four steps back (it finds which sensor variant is in memory) | Yes: memory only |
+| `open_gate_apply_57.cmd` | **5.7K, NOT RUN ON ANY FX30:** a real 5760 × 3840 file, about 300 Mbps on the 100M record settings, no B frames, MP4 headers at 5760 × 3840 (see "5.7K") | **Yes: memory only** |
+| `open_gate_apply_57_no_meta.cmd` | 5.7K with the MP4 headers left at 3840 × 2160 | **Yes: memory only** |
+| `open_gate_putback_57.cmd` | Puts the four 5.7K steps back | Yes: memory only |
+| `dump_info_57.cmd` | The debug dump for a camera in the 5.7K state (the ordinary dump calls that state NOT READY) | No |
+| `open_gate_putback.cmd` | Puts the four steps back (it finds which sensor variant or state is in memory) | Yes: memory only |
 | `screen_putback.cmd` | Puts the screen step back | Yes: memory only |
 | `playback_fix_apply.cmd` | **Optional, not run on any camera** (the FX3's own was not run either): lets the camera play 3840 × 2560 clips back (see "While it is applied") | **Yes: memory only** |
 | `playback_fix_putback.cmd` | Puts the playback step back | Yes: memory only |
@@ -83,13 +96,13 @@ Each live run asks for your Mac password: macOS keeps its own driver on the came
 
 If macOS refuses to open a .command file ("unidentified developer" or "could not verify"), open System Settings > Privacy & Security, scroll down and click "Open Anyway". Or open Terminal, type `bash` and a space, drag the .command file into the window, and press Return.
 
-## Android (app 0.5; v1's app ran the steps on a phone, v2's has not run yet)
+## Android (app 0.6)
 
 `android/FX30-OpenGate.apk` runs this kit from a phone connected to the camera by USB-C (or an OTG adapter). It carries exactly the files in `windows/tools` of this commit and runs them unchanged; only the USB access, the dialogs and the folder for the results are the phone's.
 
 1. Install the APK (allow installing from unknown sources). It installs beside the other kits' apps; they do not share anything on the phone.
 2. Set the camera as for the PC (below), and also **USB Power Supply: Off**, or it charges from the phone.
-3. **1. Read-only check** first: the apply starts only after a check on this phone said READY. Then **2. Apply to camera**. The "Screen step" box chooses between the four-step apply (ticked) and the three open-gate steps only. Leave the "Sensor variant B" box unticked unless you are doing the A/B test below; **Put back** works for either variant. **Dump info** is the debug dump.
+3. **1. Read-only check** first: the apply starts only after a check on this phone said READY. Then **2. Apply to camera**. The "Screen step" box chooses between the four-step apply (ticked) and the three open-gate steps only. Leave the "Sensor variant B" box unticked unless you are doing the A/B test below; **Put back** works for either variant. The **5.7K** box (new in 0.6, not run on any camera) makes Apply, Put back and Dump info use the 5.7K state; read "5.7K" below first. **Dump info** is the debug dump.
 4. When Android asks to open *FX30 Open Gate* for the camera, tick **Always** and press OK. It comes up twice: once in Mass Storage, once in service mode.
 5. When the log says **unplug and plug in again**, do that with the phone cable. Never switch the camera off.
 6. **Stop waiting** ends a wait for the camera. It never interrupts a step that is talking to the camera.
@@ -173,6 +186,36 @@ If kit v1 is still applied, pull the battery for 10 seconds first.
 9. Record 10 to 30 seconds in XAVC S 4K and stop. Set MOVIE again if needed, connect USB and run `windows/dump_info.cmd` once more. Check the clip on a computer.
 10. Only if that clip is good: try XAVC HS 4K, then De-Squeeze Display at 1.3x and 2.0x.
 11. To return to stock: battery out for 10 seconds, or `open_gate_putback.cmd`.
+
+**5.7K: 5760 × 3840, about 300 Mbps, no B frames (new 2026-11-28, NOT RUN ON ANY FX30)**
+
+This is the A7 IV's working 5.7K state built for the FX30. The sensor side is the 4K open gate's, which records on FX30s: the same 5952 × 3968 window, the same sensor registers. Three things differ:
+
+| | 4K open gate | 5.7K |
+|---|---|---|
+| First-stage picture (after the first scaler) | 4336 × 2438, squeezed | **5760 × 3840**: 0.968 of the sensor window in both directions, so real 5.7K rows and columns |
+| Output | 3840 × 2560 | **5760 × 3840**, one to one from the first stage, in a 30.8 MB buffer the camera has but does not use for movies |
+| Encoder | one core, the menu's bit rate, B frames | **both cores, about 300 Mbps on the 100M record settings, I and P frames only** |
+
+- **No B frames** is not a taste choice: on the A7 IV, 5.7K with B frames repeated frames, and I and P only fixed it. Each frame then depends only on earlier ones.
+- **300 Mbps** applies to the record settings of 100 Mbps and more (the figures of Sony's own unused 5760 × 3240 format). Lower settings keep their rate.
+- The MP4 headers say 5760 × 3840 (`open_gate_apply_57_no_meta.cmd` leaves them at 3840 × 2160).
+- No raw-buffer step is needed: the sensor side is unchanged.
+
+What was checked, all on the FX30's own code in emulation: the picture records pass every rule the stock records obey; the camera's scaler takes the whole 5760 × 3840 picture; its memory manager opens the 30.8 MB buffer; its encoder tables accept every changed format and its codec's memory need fits; the MP4 writer gives 5760 × 3840 for every request; and each step writes nothing over the 4K state and the other way round.
+
+What is not known: everything on a camera. The FX30 has never been asked for a first-stage picture this wide or for a 22-megapixel encode. If it cannot do it, expect a restart or a broken file when MOVIE starts or when recording starts; a battery pull clears it.
+
+How to run it:
+
+1. Set File Format **XAVC S 4K**, 24p (25p on a PAL camera), a 100M or higher record setting, SteadyShot **Off or Standard** (not Active), S&Q and Proxy off. Use a fast card (V90 or CFexpress Type A): 300 Mbps is 37 MB a second.
+2. Cold boot (battery out for 10 seconds), STILL, `check_readonly.cmd`: READY. Do not apply the 4K open gate first: 5.7K is a state of its own.
+3. `open_gate_apply_57.cmd`: four steps (K5, K16, K19, S16), then the read-only session in MOVIE. It should say the sensor and records AGREE and the verdict READY.
+4. Record 10 seconds. Then, still in MOVIE, `dump_info_57.cmd`.
+5. Send `camera_private`, and for the clip: its size and bit rate (MediaInfo), whether every frame is different (no repeats), and one frame.
+6. Put back: battery out for 10 seconds, or `open_gate_putback_57.cmd`.
+
+Do not play 5.7K clips back on the camera. Do not use XAVC HS for the first test (its 4:2:2 settings already restart the camera at 3840 × 2560).
 
 **Variant B (an A/B test of the sensor step)**
 

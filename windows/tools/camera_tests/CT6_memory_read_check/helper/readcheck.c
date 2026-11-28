@@ -106,8 +106,8 @@
 #ifndef LEVEL
 #define LEVEL 1
 #endif
-#if LEVEL < 1 || LEVEL > 35 || LEVEL == 11
-#error "LEVEL must be 1 to 10, or 12 to 35"
+#if LEVEL < 1 || LEVEL > 39 || LEVEL == 11
+#error "LEVEL must be 1 to 10, or 12 to 39"
 #endif
 #if LEVEL >= 3 && defined(HOST_TEST)
 #error "levels 3 to 8 have no PC build: they call three functions of the camera's libsencore.so (see emu_built.py)"
@@ -202,7 +202,7 @@ static i64 sys_write(int fd, const void *b, u64 n) { return sc(NR_write, fd, (i6
 static i64 sys_close(int fd) { return sc(NR_close, fd, 0, 0, 0, 0, 0); }
 static i64 sys_getdents64(int fd, void *b, u64 n) { return sc(NR_getdents64, fd, (i64)b, (i64)n, 0, 0, 0); }
 static i64 sys_geteuid(void) { return sc(NR_geteuid, 0, 0, 0, 0, 0, 0); }
-#if LEVEL == 2 || LEVEL == 3 || (LEVEL >= 7 && LEVEL <= 12) || LEVEL == 15 || LEVEL == 18 || (LEVEL >= 21 && LEVEL <= 28) || LEVEL == 31 || LEVEL == 32 || LEVEL == 33 || LEVEL == 34 || LEVEL == 35  /* a level 1 build contains no mapping call at all */
+#if LEVEL == 2 || LEVEL == 3 || (LEVEL >= 7 && LEVEL <= 12) || LEVEL == 15 || LEVEL == 18 || (LEVEL >= 21 && LEVEL <= 28) || LEVEL == 31 || LEVEL == 32 || LEVEL == 33 || LEVEL == 34 || LEVEL == 35 || LEVEL == 39  /* a level 1 build contains no mapping call at all */
 static i64 sys_mmap_ro(int fd, u64 len, u64 off)
 {
     i64 r = sc(NR_mmap, 0, (i64)len, 1 /* PROT_READ */, 1 /* MAP_SHARED */, fd, (i64)off);
@@ -217,7 +217,7 @@ static i64 sys_mmap_rw(int fd, u64 len, u64 off)
     return (r < 0 && r > -4096) ? -1 : r;
 }
 #endif
-#if LEVEL >= 2
+#if LEVEL >= 2 && LEVEL != 36 && LEVEL != 38      /* levels 36 and 38 map and unmap nothing */
 static i64 sys_munmap(void *p, u64 len) { return sc(NR_munmap, (i64)p, (i64)len, 0, 0, 0, 0); }
 #endif
 #endif
@@ -1190,7 +1190,7 @@ static void level12(void)
 
 /* ------------------------------------------------------------------ level 15: the movie output state, read-only */
 
-#if LEVEL == 15 || LEVEL == 21 || LEVEL == 28 || LEVEL == 33 || LEVEL == 34 || LEVEL == 35
+#if LEVEL == 15 || LEVEL == 21 || LEVEL == 28 || LEVEL == 33 || LEVEL == 34 || LEVEL == 35 || LEVEL == 39
 /* Level 21 is this same code with its own table of ranges: the raw ports' state (the RDC objects of the device group), read-only.
    The three imports, all from libsencore.so (finding F512). The transfer is used with direction 0 only: coprocessor to buffer. */
 extern u64 cam_dmm_alloc(u32 size, u32 *handle) __asm__("_Z9dmm_allocjPj");
@@ -1289,6 +1289,26 @@ static const struct l15_range out_fixed[] = {
     { 0x0155c000U, 0x3000U, "misc_d" },
     { 0x01562000U, 0x1000U, "misc_e" },
     { 0x01927000U, 0x2000U, "misc_f" },
+    { 0x011d0000U, 0x2000U, "context" },
+};
+#elif LEVEL == 39
+#define L15_N "39"
+#define L15_HEAD "== level 39: the MBL noise-reduction state, read-only\n"
+/* cpapp-b.bin 6.02 (finding F1214, request 90; build/mbl_state.py has the same table): the second movie noise-reduction stage MBL keeps no
+   copy of its registers, so this level copies what job 0x332838 fills them from: the CCNR tables 0x12b6190 to 0x12b7bf8, the COMMON / YKNR /
+   box / KKNR / CP tables 0x149d318 to 0x14a1180 (the on/off byte of each box 0x149d480), the picture calculation's debug flags (flag 0x1e
+   makes the job copy its block to 0x1a4dc58 and its inputs to 0x1a4f318), those debug copies, KKNR's face slots 0x1a53e58, the movie
+   settings block 0x11cf8b8, the word 0x14e84bc, the camera context 0x11de450 and the camera core's context. Nothing is found through a
+   pointer. */
+static const struct l15_range out_fixed[] = {
+    { 0x012b6000U, 0x2000U, "ccnr_tables" },
+    { 0x0149d000U, 0x5000U, "mbl_tables" },
+    { 0x01296000U, 0x1000U, "debug_flags" },
+    { 0x01a4d000U, 0x3000U, "mbl_debug" },
+    { 0x01a53000U, 0x1000U, "face_slots" },
+    { 0x011cf000U, 0x1000U, "seq_settings" },
+    { 0x014e8000U, 0x1000U, "mbl_misc" },
+    { 0x011de000U, 0x1000U, "camera_ctx" },
     { 0x011d0000U, 0x2000U, "context" },
 };
 #else
@@ -3338,6 +3358,388 @@ static void level32(void)
 }
 #endif
 
+/* ------------------------------------------------------------------ levels 36, 37 and 38: a menu design in one mapped file, with a code block */
+
+/* 2026-11-27 (dsqmenu_v2 and dsqlabel_v1, modding/DSQMENU_V2.md): level 36 checks (read-only), 37 applies, 38 puts back. Everything is in this
+ * process (im.elf), in the file PB_LIB as mapped here; its mapping with file offset 0 gives the load base:
+ *   seg0  byte sites inside the mapping with file offset 0 (virtual address = file offset: appFw.so's first segment, or a whole string bank)
+ *   data  byte sites in the data segment (RELRO), each used only inside a readable PB_LIB mapping at its file offset (as MP_LD)
+ *   ptr   relocated pointers in the data segment: stock = load base + a stock target; target = the code block + an offset
+ *   tree  values in std::maps that start-up code built (root at +0x10 of the container, key +0x20, value +0x24 of a node), one per entry
+ *   block the code block: one read+execute mapping for the code and one read+write page for its data, both anonymous (level 37 makes them)
+ *   label (2026-11-28, dsqmenu_v3) a seg0 slot of four bytes that the design's code block writes at run time (a runtime text id 0x01xxxxxx);
+ *         the helper never writes one, it checks it (the file's id, or a runtime id) and puts it back to the file's id
+ * Only seg0 is needed; the header's counts say which other kinds a design has. Every read and write of this process's memory goes through
+ * /proc/self/mem (pread64 / pwrite64), so an address that is not mapped is an error, never a fault. Apply writes seg0 (table order), the
+ * tree values, the block, ptr (table order), data; put back data, ptr (reverse order), the tree values (reverse), seg0 (reverse: a count the
+ * design writes last goes back first); a failure puts every site this run touched back. Put back leaves the block mapped: nothing may still
+ * be running in it when it goes, so it never goes. */
+#if LEVEL >= 36 && LEVEL <= 38
+#ifndef PB_H
+#error "levels 36 to 38 need -DPB_H with the header that `gen_expected.py --pb <design>` writes"
+#endif
+struct pb_site { u32 off; u8 len, kind; u8 stock[16], changed[16]; };   /* kind 0: a guard, which must hold the stock bytes */
+struct pb_ptr { u32 va, foff, old_target, new_off; };
+struct pb_treev { u32 va; int key, old, new; };                         /* container (virtual address in PB_LIB), key, stock and new value */
+#include PB_H                              /* PB_DESIGN, PB_LIB, PB_N_*, pb_s0[], pb_ds[], pb_ds_foff[], pb_ptr[], pb_trees[], PB_BLOCK_*, pb_block[] */
+#ifndef PB_MAX                             /* the per-entry state arrays: 32, or what a larger design's header asks for (dsqmenu_v4: 64) */
+#define PB_MAX 32
+#endif
+_Static_assert(PB_N_S0 >= 1 && PB_N_S0 <= PB_MAX && PB_N_DS <= PB_MAX && PB_N_PTR <= PB_MAX && PB_N_TREE <= PB_MAX, "pb table sizes");
+_Static_assert(PB_N_PTR == 0 || PB_BLOCK_BYTES >= 32, "pointers need a code block");
+#define NR_pread64 67
+#define NR_pwrite64 68
+#if LEVEL == 36
+#define PB_VERB "check (read-only)"
+#elif LEVEL == 37
+#define PB_VERB "apply"
+#else
+#define PB_VERB "put back"
+#endif
+enum { PB_STOCK = 0, PB_TARGET = 1, PB_OTHER = 2, PB_UNREAD = 3, PB_NONE = 4 };
+
+static i64 pb_pm = -1;                     /* /proc/self/mem */
+static u64 pb_lo, pb_hi, pb_block_at;      /* PB_LIB's mapping with file offset 0 (lo = its load base); the code block (0: none found) */
+static u64 pb_node[PB_MAX];                /* the tree node of each tree entry's key */
+static u8 pb_got_s0[PB_MAX][16];           /* the bytes each seg0 entry held when checked (an undo of a put-back label slot writes them back) */
+
+__attribute__((noinline)) static int pb_rd(u64 at, void *out, u64 n)
+{
+    return sc(NR_pread64, pb_pm, (i64)out, (i64)n, (i64)at, 0, 0) == (i64)n;
+}
+#if LEVEL != 36
+__attribute__((noinline)) static int pb_wr(u64 at, const void *in, u64 n)
+{
+    return sc(NR_pwrite64, pb_pm, (i64)in, (i64)n, (i64)at, 0, 0) == (i64)n;
+}
+#endif
+
+static void pb_x(u64 v)
+{
+    u8 be[8]; int k = 0;
+    for (int i = 0; i < 8; i++) be[i] = (u8)(v >> (8 * (7 - i)));
+    while (k < 7 && !be[k]) k++;
+    puts_("0x"); puthex(be + k, (u64)(8 - k));
+}
+
+static int pb_eq(const u8 *a, const u8 *b, u64 n)
+{
+    for (u64 i = 0; i < n; i++) if (a[i] != b[i]) return 0;
+    return 1;
+}
+
+static int pb_hex(const char **pp, u64 *out)
+{
+    const char *p = *pp; u64 v = 0; int n = 0;
+    for (;; p++, n++) {
+        char c = *p; u32 d;
+        if (c >= '0' && c <= '9') d = (u32)(c - '0');
+        else if (c >= 'a' && c <= 'f') d = (u32)(c - 'a' + 10);
+        else break;
+        v = v << 4 | d;
+    }
+    *pp = p; *out = v;
+    return n;
+}
+
+/* One line of /proc/self/maps whose path ends with "/" PB_LIB. want_base: the line with file offset 0 (start, end, perms). Otherwise the
+ * line that holds [at, at + len) (its perms and its file offset there). */
+static int pb_line(const char *s, u64 n, int want_base, u64 at, u64 len, u64 *lo, u64 *hi, u64 *foff, char *perms)
+{
+    static const volatile char want[] = "/" PB_LIB;      /* volatile: kept as a string in the file, where check_built.py finds it */
+    u64 w = sizeof want - 1, a, b, off;
+    const char *p = s;
+    if (n < w) return 0;
+    for (u64 k = 0; k < w; k++) if (s[n - w + k] != want[k]) return 0;
+    if (!pb_hex(&p, &a) || *p++ != '-' || !pb_hex(&p, &b) || *p++ != ' ') return 0;
+    for (int k = 0; k < 4; k++) { if (!*p) return 0; perms[k] = *p++; }
+    perms[4] = 0;
+    if (*p++ != ' ' || !pb_hex(&p, &off) || b <= a) return 0;
+    if (want_base) {
+        if (off != 0) return 0;
+        *lo = a; *hi = b;
+        return 1;
+    }
+    if (at < a || at >= b || len > b - at) return 0;
+    *foff = off + (at - a);
+    return 1;
+}
+
+__attribute__((noinline)) static int pb_maps(int want_base, u64 at, u64 len, u64 *lo, u64 *hi, u64 *foff, char *perms)
+{
+    static u8 buf[4096];
+    static char line[512];
+    u64 n = 0; int found = 0, over = 0;
+    i64 fd = sys_open(TEST_ROOT "/proc/self/maps", F_RDONLY, 0);
+    if (fd < 0) return 0;
+    for (;;) {
+        i64 r = sys_read((int)fd, buf, sizeof buf);
+        if (r <= 0) break;
+        for (i64 i = 0; i < r; i++) {
+            char c = (char)buf[i];
+            if (c != '\n') { if (n + 1 < sizeof line) line[n++] = c; else over = 1; continue; }
+            line[n] = 0;
+            if (!over && !found && pb_line(line, n, want_base, at, len, lo, hi, foff, perms)) found = 1;
+            n = 0; over = 0;
+        }
+    }
+    sys_close((int)fd);
+    return found;
+}
+
+/* A data-segment entry may be used only inside a readable PB_LIB mapping at its file offset. */
+static int pb_mapped(u64 va, u64 len, u64 foff_want)
+{
+    u64 lo, hi, foff = 0; char perms[8];
+    return pb_maps(0, pb_lo + va, len, &lo, &hi, &foff, perms) && perms[0] == 'r' && foff == foff_want;
+}
+
+/* One byte entry: prints its line and returns PB_STOCK (a guard: as in the file), PB_TARGET, PB_OTHER or PB_UNREAD; the bytes read go to got.
+ * A label slot (kind 2, four bytes) is the file's id (PB_STOCK, shown FILE) or a runtime text id 0x01xxxxxx (PB_TARGET, shown RUNTIME). */
+static int pb_site(const char *tag, const struct pb_site *e, int mapped, u8 *got)
+{
+    puts_("  "); puts_(tag); puts_(e->kind == 2 ? " label " : e->kind ? " site " : " guard "); pb_x(e->off); puts_(" "); putnum(e->len);
+    if (!mapped) { puts_(" !! not in a readable mapping of " PB_LIB " at its file offset\n"); return PB_UNREAD; }
+    if (e->len > 16 || !pb_rd(pb_lo + e->off, got, e->len)) { puts_(" !! not readable\n"); return PB_UNREAD; }
+    int st;
+    if (e->kind == 2) st = pb_eq(got, e->stock, e->len) ? PB_STOCK : e->len == 4 && got[3] == 1 ? PB_TARGET : PB_OTHER;
+    else st = pb_eq(got, e->stock, e->len) ? PB_STOCK : e->kind && pb_eq(got, e->changed, e->len) ? PB_TARGET : PB_OTHER;
+    puts_(st == PB_STOCK ? (e->kind == 2 ? " FILE " : e->kind ? " STOCK " : " SAME ") : st == PB_TARGET ? (e->kind == 2 ? " RUNTIME " : " TARGET ")
+          : e->kind ? " OTHER " : " DIFFERS ");
+    puthex(got, e->len); puts_("\n");
+    return st;
+}
+
+/* A code block at b is ours when every byte but the two words the helper writes is the design's, its base word is this process's load base
+ * of PB_LIB and its data page can be read. */
+__attribute__((noinline)) static int pb_block_ok(u64 b)
+{
+    static u8 got[256];
+    u64 words[2] = { 0, 0 }, nb = PB_BLOCK_BYTES; u32 w = 0;
+    if (!b || (b & 0xfff) || nb < 32) return 0;
+    for (u64 o = 0; o < nb; o += sizeof got) {
+        u64 n = nb - o < sizeof got ? nb - o : sizeof got;
+        if (!pb_rd(b + o, got, n)) return 0;
+        for (u64 i = 0; i < n; i++)
+            if ((o + i < 8 || o + i >= 24) && got[i] != pb_block[o + i]) return 0;
+    }
+    if (!pb_rd(b + 8, words, 16) || words[0] != pb_lo || !pb_rd(words[1], &w, 4)) return 0;
+    return 1;
+}
+
+/* A pointer entry: its line, and PB_STOCK (load base + its stock target), PB_TARGET (a block of ours + its offset), PB_OTHER or PB_UNREAD. */
+static int pb_ptr_state(const struct pb_ptr *p)
+{
+    u64 v = 0;
+    puts_("  ptr "); pb_x(p->va); puts_(" ");
+    if (!pb_mapped(p->va, 8, p->foff)) { puts_("!! not in a readable mapping of " PB_LIB " at its file offset\n"); return PB_UNREAD; }
+    if (!pb_rd(pb_lo + p->va, &v, 8)) { puts_("!! not readable\n"); return PB_UNREAD; }
+    pb_x(v);
+    if (v == pb_lo + p->old_target) { puts_(" STOCK\n"); return PB_STOCK; }
+    u64 b = v - p->new_off;
+    if (pb_block_at ? b == pb_block_at : pb_block_ok(b)) { pb_block_at = b; puts_(" TARGET (the block)\n"); return PB_TARGET; }
+    puts_(" OTHER\n");
+    return PB_OTHER;
+}
+
+/* The node of tree entry i's key, walked as the library's own lookup walks it (at most 64 steps: the trees are red-black); every read through
+ * /proc/self/mem. */
+static int pb_tree(u64 i)
+{
+    const volatile struct pb_treev *t = &pb_trees[i];
+    u64 n = 0; int k = 0, v = 0;
+    puts_("  tree "); pb_x(t->va); puts_(" key "); putnum(t->key);
+    if (!pb_rd(pb_lo + t->va + 0x10, &n, 8)) { puts_(" !! the container is not readable\n"); return PB_UNREAD; }
+    for (u32 steps = 0; n && steps < 64; steps++) {
+        if (!pb_rd(n + 0x20, &k, 4)) { puts_(" !! a node is not readable\n"); return PB_UNREAD; }
+        if (k == t->key) {
+            if (!pb_rd(n + 0x24, &v, 4)) { puts_(" !! the node is not readable\n"); return PB_UNREAD; }
+            pb_node[i] = n;
+            puts_(" node "); pb_x(n); puts_(" value "); putnum(v);
+            int st = v == t->old ? PB_STOCK : v == t->new ? PB_TARGET : PB_OTHER;
+            puts_(st == PB_STOCK ? " STOCK\n" : st == PB_TARGET ? " TARGET\n" : " OTHER\n");
+            return st;
+        }
+        if (!pb_rd(n + (t->key < k ? 0x10 : 0x18), &n, 8)) { puts_(" !! a node is not readable\n"); return PB_UNREAD; }
+    }
+    puts_(" !! not found\n");
+    return PB_UNREAD;
+}
+
+#if LEVEL != 36
+/* One write of this process's memory, read back. Prints "[undo ]<what><address>: written and read back" or the failure. An undo first
+ * reads: memory that already holds the bytes (a write that never landed) needs no write. */
+__attribute__((noinline)) static int pb_put(const char *what, u64 shown, u64 at, const void *bytes, u64 n, int undo)
+{
+    static u8 back[16];
+    int ok = n <= sizeof back && ((undo && pb_rd(at, back, n) && pb_eq(back, (const u8 *)bytes, n))
+                                  || (pb_wr(at, bytes, n) && pb_rd(at, back, n) && pb_eq(back, (const u8 *)bytes, n)));
+    if (!ok) puts_("!! ");
+    if (undo) puts_("undo ");
+    puts_(what); pb_x(shown);
+    puts_(ok ? (undo ? ": put back\n" : ": written and read back\n") : (undo ? ": NOT put back\n" : ": the write through /proc/self/mem did not hold\n"));
+    return ok;
+}
+#endif
+
+#if LEVEL == 37
+/* The code block: code (read+execute) and data (read+write), anonymous and private; the image and the two header words through
+ * /proc/self/mem (the kernel syncs the instruction cache for an executable mapping), then checked as pb_block_ok checks a block it finds. */
+static int pb_make_block(void)
+{
+    u64 len = (PB_BLOCK_BYTES + 0xfffUL) & ~0xfffUL, words[2];
+    i64 code = sc(NR_mmap, 0, (i64)len, 5, 0x22, -1, 0);       /* PROT_READ | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS */
+    i64 data = sc(NR_mmap, 0, 0x1000, 3, 0x22, -1, 0);         /* PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS */
+    int code_ok = (u64)code < 0xfffffffffffff000UL, data_ok = (u64)data < 0xfffffffffffff000UL;
+    if (code_ok && data_ok) {
+        words[0] = pb_lo; words[1] = (u64)data;
+        if (pb_wr((u64)code, pb_block, PB_BLOCK_BYTES) && pb_wr((u64)code + 8, words, 16) && pb_block_ok((u64)code)) {
+            pb_block_at = (u64)code;
+            puts_("block made at "); pb_x((u64)code); puts_(" (code, read+execute, "); putnum((i64)len); puts_(" bytes), data page ");
+            pb_x((u64)data); puts_(" (read+write); written and read back\n");
+            return 1;
+        }
+    }
+    if (code_ok) sys_munmap((void *)code, len);
+    if (data_ok) sys_munmap((void *)data, 0x1000);
+    puts_("!! the block could not be made"); puts_(code_ok && data_ok ? " (written but not read back as the design's)\n" : " (no mapping)\n");
+    return 0;
+}
+#endif
+
+static void pb_run(void)
+{
+    static u8 st_s0[PB_MAX], st_ds[PB_MAX], st_p[PB_MAX], st_t[PB_MAX], tmp[16];
+    u64 n_s0 = PB_N_S0, n_ds = PB_N_DS, n_p = PB_N_PTR, n_t = PB_N_TREE;
+    int bad = 0, n_stock = 0, n_target = 0, n_runtime = 0, n_file = 0;
+    for (u64 i = 0; i < n_s0; i++) {
+        const struct pb_site *e = &pb_s0[i];
+        st_s0[i] = (u8)pb_site("seg0", e, e->off < pb_hi - pb_lo && e->len <= pb_hi - pb_lo - e->off, pb_got_s0[i]);
+    }
+    for (u64 i = 0; i < n_ds; i++) st_ds[i] = (u8)pb_site("data", &pb_ds[i], pb_mapped(pb_ds[i].off, pb_ds[i].len, pb_ds_foff[i]), tmp);
+    for (u64 i = 0; i < n_p; i++) st_p[i] = (u8)pb_ptr_state(&pb_ptr[i]);
+    for (u64 i = 0; i < n_t; i++) st_t[i] = (u8)pb_tree(i);
+    for (u64 i = 0; i < n_s0; i++) {
+        if (st_s0[i] >= PB_OTHER) bad = 1;
+        else if (pb_s0[i].kind == 2) { if (st_s0[i]) n_runtime++; else n_file++; }
+        else if (pb_s0[i].kind) { if (st_s0[i]) n_target++; else n_stock++; }
+    }
+    for (u64 i = 0; i < n_ds; i++) { if (st_ds[i] >= PB_OTHER) bad = 1; else if (pb_ds[i].kind) { if (st_ds[i]) n_target++; else n_stock++; } }
+    int p_stock = 0;
+    for (u64 i = 0; i < n_p; i++) { if (st_p[i] >= PB_OTHER) bad = 1; else if (st_p[i]) n_target++; else { n_stock++; p_stock++; } }
+    (void)p_stock;
+    for (u64 i = 0; i < n_t; i++) { if (st_t[i] >= PB_OTHER) bad = 1; else if (st_t[i]) n_target++; else n_stock++; }
+    if (n_p) {
+        if (pb_block_at) {
+            u64 dp = 0; u32 dw[6] = { 0, 0, 0, 0, 0, 0 };
+            puts_("block in place at "); pb_x(pb_block_at);
+            if (pb_rd(pb_block_at + 16, &dp, 8) && pb_rd(dp, dw, 24)) {
+                puts_(", data "); pb_x(dp); puts_(": staged "); putnum(dw[0]); puts_(" gets "); putnum(dw[1]);
+                puts_(" commits "); putnum(dw[2]); puts_(" last "); putnum(dw[3]); puts_(" label "); putnum(dw[4]); puts_(" id "); pb_x(dw[5]);
+            }
+            puts_("\n");
+        } else puts_("no block in place\n");
+    }
+    puts_("sites: "); putnum(n_stock); puts_(" stock, "); putnum(n_target); puts_(" target");
+    if (n_runtime + n_file) { puts_("; label slots: "); putnum(n_runtime); puts_(" runtime text, "); putnum(n_file); puts_(" the file's"); }
+    puts_(bad ? "; something is neither (see the lines above)\n" : "\n");
+#if LEVEL == 36
+    if (bad) puts_("== level 36 verdict: NOT READY: see the lines above\n");
+    else if (!n_target) puts_("== level 36 verdict: READY: every guard is as in the file and every site holds the stock bytes\n");
+    else if (!n_stock) puts_("== level 36 verdict: APPLIED: every site holds the design's bytes\n");
+    else puts_("== level 36 verdict: PARTLY APPLIED: some sites hold the stock bytes, some the design's\n");
+#else
+    if (bad) { puts_("!! refused: a guard or a site is not as it must be; nothing is written\n"); return; }
+#if LEVEL == 37
+    if (!n_stock) { puts_("NOTHING TO DO: every site already holds the target bytes (apply)\n"); return; }
+#else
+    if (!n_target && !n_runtime) { puts_("NOTHING TO DO: every site already holds the target bytes (put back)\n"); return; }
+#endif
+    puts_("checks passed: every guard is as in the file, every site holds one of the two sets of bytes\n");
+    static u8 done_s0[PB_MAX], done_ds[PB_MAX], done_p[PB_MAX], done_t[PB_MAX];
+    int failed = 0, tv;
+#if LEVEL == 37
+    for (u64 i = 0; i < n_s0 && !failed; i++)
+        if (pb_s0[i].kind == 1 && st_s0[i] == PB_STOCK) { done_s0[i] = 1; failed = !pb_put("seg0 site ", pb_s0[i].off, pb_lo + pb_s0[i].off, pb_s0[i].changed, pb_s0[i].len, 0); }
+    for (u64 i = 0; i < n_t && !failed; i++)
+        if (st_t[i] == PB_STOCK) { tv = pb_trees[i].new; done_t[i] = 1; failed = !pb_put("tree node ", pb_node[i], pb_node[i] + 0x24, &tv, 4, 0); }
+    if (!failed && p_stock && !pb_block_at) failed = !pb_make_block();
+    for (u64 i = 0; i < n_p && !failed; i++)
+        if (st_p[i] == PB_STOCK) {
+            u64 v = pb_block_at + pb_ptr[i].new_off;
+            done_p[i] = 1; failed = !pb_put("ptr ", pb_ptr[i].va, pb_lo + pb_ptr[i].va, &v, 8, 0);
+        }
+    for (u64 i = 0; i < n_ds && !failed; i++)
+        if (pb_ds[i].kind && st_ds[i] == PB_STOCK) { done_ds[i] = 1; failed = !pb_put("data site ", pb_ds[i].off, pb_lo + pb_ds[i].off, pb_ds[i].changed, pb_ds[i].len, 0); }
+    if (!failed) { puts_("DONE: every site holds the target bytes (apply)\n"); return; }
+#else
+    for (u64 i = 0; i < n_ds && !failed; i++)
+        if (pb_ds[i].kind && st_ds[i] == PB_TARGET) { done_ds[i] = 1; failed = !pb_put("data site ", pb_ds[i].off, pb_lo + pb_ds[i].off, pb_ds[i].stock, pb_ds[i].len, 0); }
+    for (u64 k = 0; k < n_p && !failed; k++) {
+        u64 i = n_p - 1 - k, v = pb_lo + pb_ptr[i].old_target;
+        if (st_p[i] == PB_TARGET) { done_p[i] = 1; failed = !pb_put("ptr ", pb_ptr[i].va, pb_lo + pb_ptr[i].va, &v, 8, 0); }
+    }
+    for (u64 k = 0; k < n_t && !failed; k++) {
+        u64 i = n_t - 1 - k;
+        if (st_t[i] == PB_TARGET) { tv = pb_trees[i].old; done_t[i] = 1; failed = !pb_put("tree node ", pb_node[i], pb_node[i] + 0x24, &tv, 4, 0); }
+    }
+    for (u64 k = 0; k < n_s0 && !failed; k++) {
+        u64 i = n_s0 - 1 - k;
+        if (pb_s0[i].kind && st_s0[i] == PB_TARGET)
+            { done_s0[i] = 1; failed = !pb_put(pb_s0[i].kind == 2 ? "seg0 label " : "seg0 site ", pb_s0[i].off, pb_lo + pb_s0[i].off, pb_s0[i].stock, pb_s0[i].len, 0); }
+    }
+    if (!failed) { puts_("DONE: every site holds the target bytes (put back)\n"); return; }
+#endif
+    /* Something failed: every site this run touched goes back to what it held, in the reverse order of the writes. */
+    int undo_bad = 0;
+#if LEVEL == 37
+    for (u64 i = 0; i < n_ds; i++)
+        if (done_ds[i]) undo_bad |= !pb_put("data site ", pb_ds[i].off, pb_lo + pb_ds[i].off, pb_ds[i].stock, pb_ds[i].len, 1);
+    for (u64 k = 0; k < n_p; k++) {
+        u64 i = n_p - 1 - k, v = pb_lo + pb_ptr[i].old_target;
+        if (done_p[i]) undo_bad |= !pb_put("ptr ", pb_ptr[i].va, pb_lo + pb_ptr[i].va, &v, 8, 1);
+    }
+    for (u64 k = 0; k < n_t; k++) {
+        u64 i = n_t - 1 - k;
+        if (done_t[i]) { tv = pb_trees[i].old; undo_bad |= !pb_put("tree node ", pb_node[i], pb_node[i] + 0x24, &tv, 4, 1); }
+    }
+    for (u64 k = 0; k < n_s0; k++) {
+        u64 i = n_s0 - 1 - k;
+        if (done_s0[i]) undo_bad |= !pb_put("seg0 site ", pb_s0[i].off, pb_lo + pb_s0[i].off, pb_s0[i].stock, pb_s0[i].len, 1);
+    }
+#else
+    for (u64 i = 0; i < n_s0; i++)
+        if (done_s0[i])
+            undo_bad |= !pb_put(pb_s0[i].kind == 2 ? "seg0 label " : "seg0 site ", pb_s0[i].off, pb_lo + pb_s0[i].off,
+                                pb_s0[i].kind == 2 ? pb_got_s0[i] : pb_s0[i].changed, pb_s0[i].len, 1);
+    for (u64 i = 0; i < n_t; i++)
+        if (done_t[i]) { tv = pb_trees[i].new; undo_bad |= !pb_put("tree node ", pb_node[i], pb_node[i] + 0x24, &tv, 4, 1); }
+    for (u64 i = 0; i < n_p; i++) {
+        u64 v = pb_block_at + pb_ptr[i].new_off;
+        if (done_p[i]) undo_bad |= !pb_put("ptr ", pb_ptr[i].va, pb_lo + pb_ptr[i].va, &v, 8, 1);
+    }
+    for (u64 i = 0; i < n_ds; i++)
+        if (done_ds[i]) undo_bad |= !pb_put("data site ", pb_ds[i].off, pb_lo + pb_ds[i].off, pb_ds[i].changed, pb_ds[i].len, 1);
+#endif
+    puts_(undo_bad ? "UNDO INCOMPLETE: main-processor memory may be partly changed; cold boot the camera (battery out) before anything else\n"
+                   : "NOT DONE: a step failed; every site this run touched was put back\n");
+#endif
+}
+
+static void pb_level(void)
+{
+    u64 f; char perms[8];
+    puts_("== level " RC_STR(LEVEL) ": " PB_VERB " the sites of " PB_DESIGN " in " PB_LIB "\n");
+    if (!pb_maps(1, 0, 0, &pb_lo, &pb_hi, &f, perms)) { puts_("!! " PB_LIB " is not in this process's list of mappings; nothing is written\n"); return; }
+    puts_(PB_LIB " mapped at "); pb_x(pb_lo); puts_("-"); pb_x(pb_hi); puts_(" "); puts_(perms); puts_("\n");
+    pb_pm = sys_open(TEST_ROOT "/proc/self/mem", LEVEL == 36 ? F_RDONLY : 2, 0);
+    if (pb_pm < 0) { puts_("!! /proc/self/mem open failed "); putnum(pb_pm); puts_("; nothing is written\n"); return; }
+    pb_run();
+    sys_close((int)pb_pm);                 /* the descriptor does not stay open in im.elf */
+    pb_pm = -1;
+}
+#endif
+
 /* ------------------------------------------------------------------ entry */
 
 static void run(void)
@@ -3374,7 +3776,7 @@ static void run(void)
 #if LEVEL == 13 || LEVEL == 14
     level13();
 #endif
-#if LEVEL == 15 || LEVEL == 21 || LEVEL == 28 || LEVEL == 33 || LEVEL == 34 || LEVEL == 35
+#if LEVEL == 15 || LEVEL == 21 || LEVEL == 28 || LEVEL == 33 || LEVEL == 34 || LEVEL == 35 || LEVEL == 39
     level15();
 #endif
 #if LEVEL == 16 || LEVEL == 17
@@ -3409,6 +3811,9 @@ static void run(void)
 #endif
 #if LEVEL == 32
     level32();
+#endif
+#if LEVEL >= 36 && LEVEL <= 38
+    pb_level();
 #endif
     puts_("== done, bytes written before this line: "); putnum((i64)out_total); puts_("\n");
     if (out_fd >= 0) sys_close(out_fd);

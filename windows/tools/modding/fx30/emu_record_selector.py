@@ -38,6 +38,9 @@ CONSTS = {"a7s3_501": {"selector": 0x256128, "ids": 0xC70624, "modes": 40},
           # A1 II 4.00 (2026-11-26, A1 II port): compare chain at 0x279f20 (found by the MOVW/MOVT loads of its record addresses, e.g.
           # 0xdf6844 at 0x27a0b0); the same key struct
           "a1m2_400": {"selector": 0x279F20, "ids": 0xE9EB40, "modes": 44},
+          # A1 4.00 (2026-11-28, A1 port): the A1 II's compare chain at 0x256ce4 (the same first instructions; found by the MOVW/MOVT load
+          # of its 4K record 0xbfe6f4 at 0x256e76); the A1 II's 44 mode ids
+          "a1_400": {"selector": 0x256CE4, "ids": 0xCA6B8C, "modes": 44},
           # A7C II 2.01, for comparison with the FX2 (A7C II port: build/c2_emu_selector.py)
           "a7c2_201": {"selector": 0x2731F8, "ids": 0xDE99D4, "modes": 30}}
 KEY, RET = 0x2400000, 0x2410000

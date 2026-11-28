@@ -1,6 +1,7 @@
 """Build `outsz2560_fx30_v1`: the FX30 6.01 (fx30_601) counterpart of the A7 IV's working `outsz2560_v1` (FX30 port, 2026-11-26).
 
   C:/Python313/python.exe -B build/build_ram_words_fx30.py      writes modding/designs/outsz2560_fx30_v1.json and _pokes_ram.txt
+  C:/Python313/python.exe -B build/build_ram_words_fx30.py og57cp      writes og57cp_fx30_v1 (2026-11-28: the 5.7K step's output side, see og57cp())
 
 One word of coprocessor RAM, the 4K movie request's output size: 3840 x 2160 -> 3840 x 2560. How the FX30's address was found:
   - The movie size table is filled at run time by 0x4644bc, the A7 IV's 0x4293c8 relinked (match_thumb exact over 96 bytes; diff_consts
@@ -183,5 +184,169 @@ def main():
           f"reader case 3 at {tgt:#x} loads {base + off:#x} (A7 IV {base_a + off_a:#x}); loads of base + 0x88: {loads88}")
 
 
+
+# og57cp_fx30_v1 (2026-11-28, the FX30's 5.7K step): the A7 IV's og57cp_v3 (F906: the real 5760x3840 file) at the FX30's addresses.
+#   - unit-count setting: the FX30's split rule is the A7 IV's 0x430d5c at 0x46bdd4 (match_thumb, one hit); at 0x46be1a it loads
+#     `movw/movt 0x155d620; ldrb r2, [r2, #0x10]` (A7 IV 0x143c9a8 + 0x10) and takes {1, 2, 4} from the table at 0x46be80: byte 0x155d630.
+#     Three dumps of a real FX30 (stills, 4K movie applied, after recording) read 0x155d620..0x155d650 as zero: the guards are read.
+#   - the memory manager's id rows (0x20b6500): the FX30 has the A7 IV's rows at the same indices (id 0x445 row 240, 0x446 row 241, 0x498 row
+#     268), each 0x108180 higher; id 0x446 cannot be opened (key 0x587), id 0x498 (key 0x5f2) opens 30,824,400 bytes, there is no row of id
+#     0x43f (build/emu_dmm_server.py --build fx30_601, asserted below).
+#   - movie size table: 0x155d444 (size) / 0x155d448 (memory id), the word outsz2560_fx30_v1 changes and its guard.
+SETTING_FX30, SETTING_A7 = 0x155D630, 0x143C9B8
+SIZE_A7_TO_FX30 = 0x155D444 - 0x143C7BC
+CAMERA_DUMPS = ROOT / "evidence/fx30/camera"
+
+
+def og57cp():
+    import emu_dmm_server as E
+    name, src = "og57cp_fx30_v1", "og57cp_v3"
+    md = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_THUMB)
+    a7 = locate_file.locate("a7iv_602", "cpapp-b.bin").read_bytes()
+    rule = [(i.address, i.mnemonic, i.op_str) for i in md.disasm(IMG[0x46BE1A - B:0x46BE34 - B], 0x46BE1A)]
+    assert rule[:3] == [(0x46BE1A, "movw", "r2, #0xd620"), (0x46BE1E, "movt", "r2, #0x155"), (0x46BE22, "ldrb", "r2, [r2, #0x10]")], rule[:3]
+    rule_a7 = [(i.mnemonic, i.op_str) for i in md.disasm(a7[0x430DA2 - B:0x430DBC - B], 0x430DA2)]
+    assert rule_a7[:3] == [("movw", "r2, #0xc9a8"), ("movt", "r2, #0x143"), ("ldrb", "r2, [r2, #0x10]")] and 0x143C9A8 + 0x10 == SETTING_A7
+    assert IMG[0x46BE22 - B:0x46BE34 - B] == a7[0x430DAA - B:0x430DBC - B], "the setting's use is not the A7 IV's"
+    assert struct.unpack_from("<3I", IMG, 0x46BE80 - B) == (1, 2, 4) == struct.unpack_from("<3I", a7, 0x430E08 - B)
+    # what the FX30 holds: the size table (emulated), the id rows and key lists (its own DMM set-up, emulated), the setting (camera dumps)
+    t, rows, _ = emu_size_table.table(BUILD)
+    known = {}
+    for k, (w, h, mid) in enumerate(rows):
+        for j, b in enumerate(struct.pack("<2HI", w, h, mid)):
+            known[t + 8 * k + j] = b
+    dumps = sorted(CAMERA_DUMPS.glob("**/cp_sizetable_0155d000.bin")) if CAMERA_DUMPS.is_dir() else []
+    for dp in dumps:
+        assert dp.read_bytes()[0x620:0x650] == bytes(0x30), dp
+    for j in range(16):                                   # read as zero on a real FX30 (the dumps above; the published tree has none and trusts this)
+        known[SETTING_FX30 - 8 + j] = 0
+    E.use_build(BUILD)
+    cfg = P.Config(P.find_file(BUILD), BUILD)
+
+    def server():
+        s = E.Server(cfg.data, cfg)
+        assert s.init() == 0 and not s.fatal
+        return s
+    s = server()
+    rows_f, a = [], P.RAM[BUILD]["id_rows"]
+    while True:
+        i, ptr = struct.unpack("<II", s.uc.mem_read(a, 8))
+        if i == 0xFFFFFFFF:
+            break
+        rows_f.append((a, i, ptr))
+        a += 8
+    by_id = {i: (ra, ptr) for ra, i, ptr in rows_f}
+    for ra, i, ptr in rows_f:
+        for j, b in enumerate(struct.pack("<II", i, ptr)):
+            known[ra + j] = b
+        q = ptr
+        while True:
+            k = struct.unpack("<I", s.uc.mem_read(q, 4))[0]
+            for j, b in enumerate(struct.pack("<I", k)):
+                known[q + j] = b
+            q += 4
+            if k == 0xFFFFFFFF:
+                break
+    assert 0x43F not in by_id and not s.open(0x446)["ok"] and s.open(0x498)["extents"][0]["size"] == 30824400
+    ref = json.loads((ROOT / "modding/designs" / f"{src}.json").read_text(encoding="utf8"))
+    rows_a7 = {0x1FAEB08: 0x446, 0x1FAEB00: 0x445, 0x1FAEBE0: 0x498}       # the A7 IV rows og57cp_v3 names
+    ptr_a7 = {0x446: 0x1FB0B08, 0x498: 0x1FB0BE0}                         # their key lists on the A7 IV
+
+    def addr(a0, n):
+        if SETTING_A7 - 8 <= a0 and a0 + n <= SETTING_A7 + 8:
+            return a0 - SETTING_A7 + SETTING_FX30
+        if 0x143C784 <= a0 < 0x143C804:
+            return a0 + SIZE_A7_TO_FX30
+        for r, i in rows_a7.items():
+            if r <= a0 < r + 8:
+                return by_id[i][0] + (a0 - r)
+        if a0 == ptr_a7[0x498]:
+            return by_id[0x498][1]
+        raise SystemExit(f"no FX30 counterpart for {a0:#x}")
+
+    def value(a0, b):
+        """key-list pointers are addresses: the FX30's own"""
+        if len(b) == 4 and a0 == 0x1FAEB0C:                                # the key-list pointer of the row: id 0x446's (old) / 0x498's (new)
+            v = struct.unpack("<I", b)[0]
+            assert v in (ptr_a7[0x446], ptr_a7[0x498])
+            return struct.pack("<I", by_id[0x446][1] if v == ptr_a7[0x446] else by_id[0x498][1])
+        if len(b) == 8 and a0 in rows_a7:                                  # a guard row: id and its key-list pointer
+            return struct.pack("<II", rows_a7[a0], by_id[rows_a7[a0]][1])
+        return b
+
+    def held(a1, b, what):
+        bad = [hex(a1 + j) for j, x in enumerate(b) if known.get(a1 + j) != x]
+        assert not bad, (what, hex(a1), bad)
+    sites, guards = [], []
+    for x in ref["sites"]:
+        a0, old, new = int(x["ram_address"], 16), bytes.fromhex(x["old"]), bytes.fromhex(x["new"])
+        fa, o2, n2 = addr(a0, 4), value(a0, old), value(a0, new)
+        held(fa, o2, "site")
+        sites.append({"ram_address": hex(fa), "old": o2.hex(), "new": n2.hex(), "note": x["note"] + f" [A7 IV {a0:#x}]"})
+    for g in ref["guards"]:
+        a0, b = int(g["ram_address"], 16), bytes.fromhex(g["bytes"])
+        fa, b2 = addr(a0, len(b)), value(a0, b)
+        held(fa, b2, "guard")
+        guards.append({"ram_address": hex(fa), "bytes": b2.hex(), "note": g["note"] + f" [A7 IV {a0:#x}]"})
+    sa = [int(x["ram_address"], 16) for x in sites]
+    assert len(set(sa)) == len(sa) == 5 and all(v % 4 == 0 for v in sa)
+    assert sites[0]["ram_address"] == hex(SETTING_FX30) and sites[-1]["ram_address"] == "0x155d444" and sites[-1]["new"] == struct.pack("<HH", 5760, 3840).hex()
+    assert sites[-1]["old"] == json.loads((ROOT / "modding/designs/outsz2560_fx30_v1.json").read_text(encoding="utf8"))["sites"][0]["old"]
+    for g in guards:
+        ga, gn = int(g["ram_address"], 16), len(g["bytes"]) // 2
+        assert not any(ga < v + 4 and v < ga + gn for v in sa), "a guard overlaps a site"
+    # the new id in the FX30's own allocator, with the change in place: 0x43f opens one unit of 30,824,400 bytes (a 5760x3840 plane at format
+    # code 2 is 27,648,000), and the other 4K movie ids still open beside it
+    s2 = server()
+    for x in sites:
+        a1 = int(x["ram_address"], 16)
+        if P.RAM[BUILD]["id_rows"] <= a1 < P.RAM[BUILD]["id_keys"]:
+            assert bytes(s2.uc.mem_read(a1, 4)) == bytes.fromhex(x["old"])
+            s2.uc.mem_write(a1, bytes.fromhex(x["new"]))
+    o = s2.open(0x43F)
+    assert o["ok"] and [e["size"] for e in o["extents"]] == [30824400], o
+    more = 1
+    while more < 12 and s2.open(0x43F).get("ok"):
+        more += 1
+    s3 = server()
+    for x in sites:
+        a1 = int(x["ram_address"], 16)
+        if P.RAM[BUILD]["id_rows"] <= a1 < P.RAM[BUILD]["id_keys"]:
+            s3.uc.mem_write(a1, bytes.fromhex(x["new"]))
+    assert s3.open(0x43F)["ok"]
+    beside = {}
+    for other in (0x43E, 0x2D9, 0x4B8, 0x60C):
+        r = s3.open(other)
+        beside[hex(other)] = [e["size"] for e in r.get("extents", [])] if r.get("ok") else "refused"
+    assert all(v != "refused" for v in beside.values()), beside
+    # opened alone, one after another: nine on the FX30 and on the A7 IV alike (the A7 IV design's figure of six was counted beside the recording's other ids)
+    assert more >= ref["summary"]["output_units_in_the_allocator"], (more, "units of 0x43f open in a row; the A7 IV's design needs six")
+    res = {"design": name, "build": BUILD, "camera": "ILME-FX30 (FX30), firmware 6.01",
+           "title": ref["title"] + " (FX30 6.01 port)", "kind": "ram_words", "artifact": "cpapp-b.bin, RAM only: these bytes are not in the file",
+           "emulated_image_sha256": SHA, "generated_by": "build/build_ram_words_fx30.py og57cp",
+           "ported_from": {"design": src, "build": "a7iv_602", "works": "on the A7 IV (F906, the real 5760x3840 file)"},
+           "status": "addresses from the FX30's own code and its emulated tables; the setting's neighbours read as zero on a real FX30; never written on an FX30",
+           "table": "unit-count setting 0x155d630 (split rule 0x46bdd4), the memory manager's id rows 0x20b6500, the movie size table 0x155d40c",
+           "summary": dict(ref["summary"], goes_with=["og57n_fx30_v1 (the first stage at 5760x3840)", "ogfile57r300m1_fx30_v4",
+                                                      "no raw-write-buffer change: the sensor window is the 4K open gate's"]),
+           "sites": sites, "guards": guards,
+           "checked_in_the_firmware_allocator": {"tool": "build/emu_dmm_server.py --build fx30_601", "open_0x43f": o["extents"], "units_of_0x43f_in_a_row": more,
+                                                 "then_open": beside},
+           "checked_against": ["the FX30 split rule 0x46bdd4 = the A7 IV's 0x430d5c: the bytes after the setting's load equal, table {1, 2, 4}",
+                               f"{len(dumps)} dumps of a real FX30: 0x155d620..0x155d650 zero", "build/emu_size_table.py fx30_601",
+                               "build/emu_dmm_server.py --build fx30_601 (id rows, key lists: the A7 IV's rows 240, 241, 268)"],
+           "precondition": "write it in a still mode, before MOVIE is entered; instead of outsz2560_fx30_v1 (the same size word)",
+           "restore": "write the old words back (in the reverse order), or cold boot",
+           "not_shown": ["anything on an FX30", "the FX30's other outputs at this size (they keep the stock sizes)"]}
+    dd = ROOT / "modding/designs"
+    (dd / f"{name}.json").write_text(json.dumps(res, indent=1) + "\n", encoding="utf8", newline="\n")
+    (dd / f"{name}_pokes_ram.txt").write_text("".join(f"{x['ram_address']} {x['new']}\n" for x in sites), encoding="utf8", newline="\n")
+    print(f"{name}: sites {[(x['ram_address'], x['old'], x['new']) for x in sites]}; {len(guards)} guards {[g['ram_address'] for g in guards]}; "
+          f"0x43f opens {o['extents'][0]['size']} x {more}; beside {beside}; {len(dumps)} camera dumps read")
+
+
 if __name__ == "__main__":
-    main()
+    if sys.argv[1:] == ["og57cp"]:
+        og57cp()
+    else:
+        main()

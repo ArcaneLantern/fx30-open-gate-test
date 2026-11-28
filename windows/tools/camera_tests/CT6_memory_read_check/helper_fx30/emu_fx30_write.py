@@ -294,6 +294,56 @@ def main():
     r, t = go(B5, mem, allowed_b("ntsc"), lose=7)
     ok(not r.bad and "NOT DONE: a step failed; every site this run touched was put back" in t and state_b(mem, "ntsc") == "stock",
        "B5 with the LC span's write lost: reported, every site put back")
+    # ---- the 5.7K sensor step (og57n_fx30_v1, K5 / K6): ogsq_fx30_v2 with the two picture records for a 5760x3840 first stage
+    d57 = design("og57n_fx30_v1")
+    K5, K6 = lib("K5"), lib("K6")
+    al57 = {}
+    for q in d57["patches"]:
+        a = int(q["addr"], 16)
+        for k, (o, n) in enumerate(zip(bytes.fromhex(q["old"]), bytes.fromhex(q["new"]))):
+            if o != n:
+                al57[a + k] = (o, n)
+    rec_bytes = {a for q in d57["patches"] if q["kind"] == "R" for a in range(int(q["addr"], 16), int(q["addr"], 16) + 3000)}
+    ok(d57["stored_records"] == d["stored_records"] and {a: v for a, v in al57.items() if a not in rec_bytes} == {a: v for a, v in table_allowed.items() if a not in rec_bytes}
+       and {a for a in al57 if al57[a] != table_allowed.get(a)} <= rec_bytes and len({a for a in al57 if al57[a] != table_allowed.get(a)}) > 400,
+       "the 5.7K sensor design differs from the 4K one only inside the two picture records (cells, sensor registers and stored records the same)")
+
+    def state57(mem, system):
+        al_ = dict(al57)
+        for a, st, nw in recs[system].values():
+            for k in range(REC):
+                if st[k] != nw[k]:
+                    al_[a + k] = (st[k], nw[k])
+        vals = [(mem.read(a, 1)[0], pr) for a, pr in al_.items()]
+        return al_, ("stock" if all(v == pr[0] for v, pr in vals) else "new" if all(v == pr[1] for v, pr in vals) else "mixed")
+    for system in ("ntsc", "pal"):
+        mem = camera(system)
+        before = mem.snapshot()
+        al_, _ = state57(mem, system)
+        r, t = go(K5, mem, al_)
+        ok(not r.bad and "DONE: all 14 sites hold the target bytes (apply)" in t and state57(mem, system)[1] == "new" and changed_only(mem, before, al_)
+           and all(mem.read(a, 1)[0] == new for a, (_, new) in cells.items()),
+           f"K5 on a stock FX30 ({system}): the 5.7K records, the cells, the sensor's window registers and the five stored records new, nothing else changed")
+        snap = mem.snapshot()
+        for which, lb in (("L5", L5), ("L6", L6), ("B5", B5), ("B6", B6)):
+            r, t = go(lb, mem, {**al_, **allowed_for(system), **allowed_b(system)})
+            ok(not r.bad and r.n_writes == 0 and wrote_nothing(t) and changed_only(mem, snap, {}),
+               f"{which} (4K) on a camera that holds the 5.7K sensor step ({system}): nothing is written, and its result reads as NOTHING WRITTEN")
+        r, t = go(K5, mem, al_)
+        ok(not r.bad and "NOTHING TO DO" in t and r.n_writes == 0, f"K5 again ({system}): nothing to do, no write")
+        r, t = go(K6, mem, al_)
+        ok(not r.bad and "(put back)" in t and "DONE" in t and state57(mem, system)[1] == "stock" and changed_only(mem, before, {}),
+           f"K6 ({system}): everything stock again, byte for byte")
+        r, t = go(L5, mem, allowed_for(system))
+        snap = mem.snapshot()
+        for which, lb in (("K5", K5), ("K6", K6)):
+            r, t = go(lb, mem, {**al_, **allowed_for(system)})
+            ok(not r.bad and r.n_writes == 0 and wrote_nothing(t) and changed_only(mem, snap, {}),
+               f"{which} (5.7K) on a camera that holds the 4K sensor step ({system}): nothing is written, and its result reads as NOTHING WRITTEN")
+    mem = camera()
+    r, t = go(K5, mem, state57(mem, "ntsc")[0], lose=2)
+    ok(not r.bad and "NOT DONE: a step failed; every site this run touched was put back" in t and state57(mem, "ntsc")[1] == "stock",
+       "K5 with the second record's write lost: reported, every site put back")
     # a camera that still holds kit v1's sensor design (no cold boot since): its tables are neither stock nor v2's
     v1 = design("ogsq_fx30_v1")
     mem = camera()
@@ -342,12 +392,20 @@ def main():
     # ---- L16 / L17 (output size) and S16 / S17 (screen words)
     t_, srows, _ = emu_size_table.table("fx30_601")
 
+    # RAM the model camera holds beside the size table: the memory manager's id rows and key list that og57cp_fx30_v1 names (its sites' old bytes
+    # and its guards: the FX30's own values, from its DMM set-up run in build/build_ram_words_fx30.py og57cp); the unit-count setting is zero
+    d57cp = design("og57cp_fx30_v1")
+    ram57 = [(int(x["ram_address"], 16), bytes.fromhex(x["old"])) for x in d57cp["sites"]] + [(int(g["ram_address"], 16), bytes.fromhex(g["bytes"])) for g in d57cp["guards"]]
+
     def words_mem():
         m = Mem(image)
         for k, (w, h, mid) in enumerate(srows):
             m.write(t_ + 8 * k, struct.pack("<2HI", w, h, mid))
+        for a, b in ram57:
+            m.write(a, b)
         return m
-    for name, s_apply, s_back in (("outsz2560_fx30_v1", "L16", "L17"), ("lcd32dsq_fx30_v1", "S16", "S17")):
+    w_all = {}
+    for name, s_apply, s_back in (("outsz2560_fx30_v1", "L16", "L17"), ("lcd32dsq_fx30_v1", "S16", "S17"), ("og57cp_fx30_v1", "K16", "K17")):
         dw = design(name)
         w_allowed = {}
         for s in dw["sites"]:
@@ -355,6 +413,7 @@ def main():
             for k, (o, n) in enumerate(zip(bytes.fromhex(s["old"]), bytes.fromhex(s["new"]))):
                 w_allowed[a + k] = (o, n)
         La, Lb = lib(s_apply), lib(s_back)
+        w_all[s_apply] = (dict(w_allowed), La, Lb)
 
         def wstate(mem):
             vals = [(mem.read(a, 1)[0], pr) for a, pr in w_allowed.items()]
@@ -386,6 +445,28 @@ def main():
         mem = words_mem()
         r, t = go(La, mem, w_allowed, lose=1)
         ok(not r.bad and "NOT DONE" in t and wstate(mem) == "stock", f"{s_apply} with the first line write lost: everything put back")
+    # the 4K and the 5.7K output steps share the size word: each must refuse the other's state
+    for first, other in (("K16", "L16"), ("L16", "K16")):
+        al_a, lib_a, _ = w_all[first]
+        al_o, lib_o, back_o = w_all[other]
+        mem = words_mem()
+        r, t = go(lib_a, mem, al_a)
+        snap = mem.snapshot()
+        for what, lb in ((other, lib_o), (other[0] + "17", back_o)):
+            r, t = go(lb, mem, {**al_a, **al_o})
+            ok(not r.bad and r.n_writes == 0 and wrote_nothing(t) and changed_only(mem, snap, {}),
+               f"{what} on a camera that holds {first}'s state: nothing is written, and its result reads as NOTHING WRITTEN")
+    al_k, lib_k, back_k = w_all["K16"]
+    mem = words_mem()
+    r, t = go(lib_k, mem, al_k)
+    ok(not r.bad and struct.unpack("<HHI", mem.read(0x155D444, 8)) == (5760, 3840, 0x43F) and mem.read(0x155D630, 4) == b"\x03\0\0\0"
+       and struct.unpack("<II", mem.read(0x20B6C88, 8)) == (0x43F, 0x20B8D60) and r.n_writes == 5,
+       "K16: the size table says 5760x3840 with buffer id 0x43f, the unit-count setting is 3 (four units), the row of id 0x446 is id 0x43f with id 0x498's key list")
+    for lose in (2, 3, 5):
+        mem = words_mem()
+        before = mem.snapshot()
+        r, t = go(lib_k, mem, al_k, lose=lose)
+        ok(not r.bad and "NOT DONE" in t and changed_only(mem, before, {}), f"K16 with line write {lose} lost: everything put back")
     for label, path in (("FX3 kit S16 (lcd32dsq_fx3_v1)", HERE.parent / "helper_fx3/libJit_fx3_S16.so"),
                         ("FX3 kit L16 (outsz2560_fx3_v1)", HERE.parent / "helper_fx3/libJit_fx3_L16.so"),
                         ("FX2 kit S16 (lcd32dsq_fx2_v1)", HERE.parent / "helper_fx2/libJit_fx2_S16.so"),
@@ -411,7 +492,7 @@ def main():
                                  + b"%x-%x ---p %08x fc:8f 55354                          /usr/lib/libmpr.so\n" % (LM_AT + lspan, LM_AT + lspan + 0x10000, lspan)
                                  + b"7f8b936000-7f8b991000 r-xp 00000000 fc:8f 55344                          /usr/lib/libsencore.so\n")
     sts = {}
-    for dn in ("ogfile2560_hs_s_fx30_v2", "ogfile2560_hs_s_fx30_v1"):
+    for dn in ("ogfile2560_hs_s_fx30_v2", "ogfile2560_hs_s_fx30_v1", "ogfile57r300m1_fx30_v4", "ogfile57r300m1_fx30_v3"):
         fl = design(dn)
         sts[dn] = {"av-cam.bin": [], "libmpr.so": []}
         for p in fl["patches"]:
@@ -460,6 +541,34 @@ def main():
         if path.is_file():
             r, t, a, m = mp("L19", av, lm0, libpath=path)
             ok(not r.bad and a == av and m == lm0 and not r.pwrites and not r.map_writes, f"{label} on an FX30: nothing is written")
+
+    # ---- K19 / K20 / M19: the 5.7K encoder side (two cores, 300 Mbps, no B pictures; v4 with the MP4 header sizes, v3 without)
+    K4, K3 = "ogfile57r300m1_fx30_v4", "ogfile57r300m1_fx30_v3"
+    av4, lm4 = applied(av, K4, "av-cam.bin"), applied(lm0, K4, "libmpr.so")
+    av3, lm3 = applied(av, K3, "av-cam.bin"), applied(lm0, K3, "libmpr.so")
+    ok(av3 == av4 and lm3 != lm4 and av4 != av2, "the two 5.7K encoder designs differ only in libmpr.so (the nine MP4 size sites)")
+    r, t, a, m = mp("K19", av, lm0)
+    ok(not r.bad and a == av4 and m == lm4 and "DONE" in t, f"K19 ({K4}): {len(sts[K4]['av-cam.bin'])} + {len(sts[K4]['libmpr.so'])} sites new, every other byte unchanged")
+    r, t, a, m = mp("K19", av4, lm4)
+    ok(not r.bad and a == av4 and m == lm4 and not r.pwrites and not r.map_writes, "K19 again: no write")
+    r, t, a, m = mp("K20", av4, lm4)
+    ok(not r.bad and a == av and m == lm0 and "DONE" in t, "K20: both stock again, byte for byte")
+    r, t, a, m = mp("M19", av, lm0)
+    ok(not r.bad and a == av3 and m == lm3 and "DONE" in t, f"M19 ({K3}, --no-meta): its {len(sts[K3]['av-cam.bin'])} + {len(sts[K3]['libmpr.so'])} sites new, the MP4 size sites stock")
+    r, t, a, m = mp("K20", av3, lm3)
+    ok(not r.bad and a == av and m == lm0 and "DONE" in t, "K20 on a camera holding M19's state: both stock again, byte for byte")
+    for step, a_in, m_in, what in (("L19", av4, lm4, "the 5.7K encoder step"), ("L20", av4, lm4, "the 5.7K encoder step"), ("N19", av4, lm4, "the 5.7K encoder step"),
+                                   ("K19", av2, lm2, "the 4K encoder step"), ("K20", av2, lm2, "the 4K encoder step"), ("M19", av2, lm2, "the 4K encoder step")):
+        r, t, a, m = mp(step, a_in, m_in)
+        ok(not r.bad and a == a_in and m == m_in and not r.pwrites and not r.map_writes and wrote_nothing(t),
+           f"{step} on a camera that holds {what}: nothing is written, and its result reads as NOTHING WRITTEN")
+    r, t, a, m = mp("K19", bytes(bad_av), lm0)
+    ok(not r.bad and a == bytes(bad_av) and m == lm0 and not r.pwrites and not r.map_writes, "K19 with a guard of av-cam.bin wrong (a descriptor's profile key): nothing is written")
+    code4 = sorted(o for o, old, new in sts[K4]["libmpr.so"] if len(old) == 4 and o < 0x2C0000)
+    r, t, a, m = mp("K19", av, lm0, pwrite_lost=[code4[0]])
+    ok(not r.bad and a == av and m == lm0 and "NOT DONE" in t, "K19 with a libmpr.so code write lost: everything put back")
+    r, t, a, m = mp("K19", av, lm0, stale=[sts[K4]["av-cam.bin"][7][0]])
+    ok(not r.bad and a == av and m == lm0 and "NOT DONE" in t, "K19 with the kernel's view not following a write: everything put back")
 
     # ---- P29 / P30: the optional playback step
     emu_fx30_playback.cases(ok)

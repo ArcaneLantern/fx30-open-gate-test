@@ -34,8 +34,23 @@ for L in 19 20; do
   "${CC[@]}" -DLEVEL=$L '-DMP_H="expected_mp_ogfile2560_hs_s_fx30_v2.h"' -DAVCAM_PHYS=0x401000000UL readcheck.c -o "$H/libJit_fx30_L$L.so"
   "${CC[@]}" -DLEVEL=$L '-DMP_H="expected_mp_ogfile2560_hs_s_fx30_v1.h"' -DAVCAM_PHYS=0x401000000UL readcheck.c -o "$H/libJit_fx30_N$L.so"
 done
+# 5.7K (2026-11-28): the A7 IV's real 5760x3840 state on the FX30. K5/K6 = og57n_fx30_v1 (ogsq_fx30_v2 with the first-stage picture at
+# 5760x3840; the same five stored records, NTSC or PAL); K16/K17 = og57cp_fx30_v1 (four scaler units, the 0x43f output buffer, the output size
+# 5760x3840), in L16's place; K19/K20 = ogfile57r300m1_fx30_v4 (two encoder cores, 300 Mbps on the 100M settings, I and P pictures only, the
+# HEVC edit list at 0, the MP4 headers at 5760x3840); M19 = ogfile57r300m1_fx30_v3 (the same without the MP4 size: --no-meta; put back by K20).
+for L in 5 6; do
+  "${CC[@]}" -DLEVEL=$L '-DSITES_H="expected_sites_og57n_fx30_v1.h"' '-DDESIGN_LABEL="og57n_fx30_v1"' -DIMAGER=0x13bd0d8UL -DCTRL_DRVPARAM=0x690U -DREC=0x160U \
+    readcheck.c "$SEN" -o "$H/libJit_fx30_K$L.so"
+done
+for L in 16 17; do
+  "${CC[@]}" -DLEVEL=$L '-DWORDS_H="expected_words_og57cp_fx30_v1.h"' readcheck.c "$SEN" -o "$H/libJit_fx30_K$L.so"
+done
+for L in 19 20; do
+  "${CC[@]}" -DLEVEL=$L '-DMP_H="expected_mp_ogfile57r300m1_fx30_v4.h"' -DAVCAM_PHYS=0x401000000UL readcheck.c -o "$H/libJit_fx30_K$L.so"
+done
+"${CC[@]}" -DLEVEL=19 '-DMP_H="expected_mp_ogfile57r300m1_fx30_v3.h"' -DAVCAM_PHYS=0x401000000UL readcheck.c -o "$H/libJit_fx30_M19.so"
 for L in 29 30; do
   "${CC[@]}" -DLEVEL=$L '-DAD_H="expected_ad_avdec8k_fx30_v1.h"' -DAVCAM_PHYS=0x401000000UL readcheck.c -o "$H/libJit_fx30_P$L.so"
 done
 cd "$H"
-for N in L5 L6 B5 B6 L16 L17 L19 L20 N19 N20 S16 S17 P29 P30; do echo "$(sha256sum libJit_fx30_$N.so | cut -d' ' -f1) $(stat -c %s libJit_fx30_$N.so) $N"; done
+for N in L5 L6 B5 B6 L16 L17 L19 L20 N19 N20 S16 S17 P29 P30 K5 K6 K16 K17 K19 K20 M19; do echo "$(sha256sum libJit_fx30_$N.so | cut -d' ' -f1) $(stat -c %s libJit_fx30_$N.so) $N"; done

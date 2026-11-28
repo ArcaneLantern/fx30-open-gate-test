@@ -3,6 +3,12 @@ first camera runs).
 
   C:\\Python313\\python.exe -B build\\build_og_fx30.py [--variant-b]     (needs Unicorn and capstone: C:\\Python313 has them)
 
+--og57n writes design og57n_fx30_v1 instead (2026-11-28, the FX30's 5.7K step): ogsq_fx30_v2 with the first-stage scaler's picture at 5760 x 3840
+instead of 4336 x 2438 (the A7 IV's og57n_v1, F906: the real 5.7K file). The sensor's registers, every table cell and the five stored records
+(with 27/32, as the A7 IV's og57n keeps it) are ogsq_fx30_v2's, byte for byte (asserted); only the two picture records differ. The window is
+5952 x 3968, so the first scaler reduces by 0.968 in both directions: 5760 x 3840 real rows and columns. It goes with og57cp_fx30_v1 (output
+size and buffers) and ogfile57r300m1_fx30_v4 (encoder).
+
 --variant-b writes design ogsq_fx30_v2b instead: ogsq_fx30_v2 with the two values a tester reported clean colour with (repo issue 1), for an
 A/B test on a camera. Only two table cells per mode and what the calculator derives from them in the stored records differ:
   LC +12        first phase-detect row   121 (25 + 48 k, the rule every stock mode obeys)  ->  window row + 51 = 145 (as the 4K mode's 406 -> 457)
@@ -82,7 +88,9 @@ NMODES = 31
 MODES = (0x820, 0x880, 0x890, 0x8C0, 0x8D0)
 COLMAP = 0x1039938
 VARIANT_B = "--variant-b" in sys.argv
-DESIGN = "ogsq_fx30_v2b" if VARIANT_B else "ogsq_fx30_v2"
+OG57N = "--og57n" in sys.argv
+assert not (VARIANT_B and OG57N)
+DESIGN = "ogsq_fx30_v2b" if VARIANT_B else "og57n_fx30_v1" if OG57N else "ogsq_fx30_v2"
 MATRIX, MROWS, MROW = 0x1038D1C, 154, 20            # v1 had 0x1038E48 / 139: the 15 rows before that are the window registers
 SHADOW0 = 0x1123DE4                                 # the register shadow: 4-byte entries {u16 register, u16 value}; a row points at the value
 WINDOW_REGS = (6, 7, 8, 9, 14, 16, 25)              # start row lo/hi, line pairs lo/hi, first phase-detect block, phase-detect pairs, read-out f2
@@ -98,7 +106,7 @@ GEOM = {"8c0": (3356, 68, 41, 406), "dci": (3148, 64, 39, 510), "830": (3164, 64
 NEW_ROW, NEW_H = 94, 3968
 assert NEW_ROW % 4 == 2
 NEW = (NEW_H + 8, 82, 48, NEW_ROW)
-OUT = (4336, 2438)
+OUT = (5760, 3840) if OG57N else (4336, 2438)      # the first-stage scaler's picture
 PAV = (27, 32)
 
 u16 = lambda b, o: struct.unpack_from("<H", b, o)[0]
@@ -331,13 +339,23 @@ def main():
         k = LINT.lrc(rec[h])
         lrc[h] = {"input": list(k["in"]), "output": list(k["out"]), "step_q12": list(k["step"]), "start": list(k["start"])}
         assert k["in"][1] == NEW[0] and u16(rec[h], 0x95E) == NEW_ROW
-        assert rec[h][0x174:0x1D8] == p8[h][0x174:0x1D8], "something after the first stage moved"
+        assert OG57N or rec[h][0x174:0x1D8] == p8[h][0x174:0x1D8], "something after the first stage moved"
+        if OG57N:                                        # a uniform reduction (5952 x 3968 -> 5760 x 3840). The padded output is 2912 x 3844: the A7 IV's
+            # og57n_v1 has 2912 x 3852 (row pad 6) from a 4688-row stage; here the firmware's own fit gives row pad 2, because 3976 stage rows at this
+            # step hold 3847 output rows. The rows the padded output needs must lie inside the stage.
+            assert k["step"][0] == k["step"][1] and 4096 < k["step"][0] < 4300 and OUT[1] < k["out"][1] <= OUT[1] + 12 and OUT[0] // 2 < k["out"][0] <= OUT[0] // 2 + 48, k
+            assert k["out"][1] * k["step"][1] <= k["in"][1] * 4096 and k["out"][0] * k["step"][0] <= k["in"][0] * 4096 + 4096, k
     nfields = {h: sum(rec[h][x:x + 2] != p8[h][x:x + 2] for x in range(0, SIZE, 2)) for h in "LR"}
     for h, a in PAIR.items():
         sites.append({"kind": "R", "addr": hex(a), "old": p8[h].hex(), "new": bytes(rec[h]).hex(), "where": "file",
                       "note": f"{'left' if h == 'L' else 'right'} picture record of modes 0x820/0x880/0x890/0x8c0/0x8d0: first stage {NEW[0]} rows "
                               f"(crop 5952 x {NEW_H}), squeezed by Lrc into the stock {OUT[0]} x {OUT[1]} front end; {nfields[h]} fields differ"})
     sites.sort(key=lambda s: int(s["addr"], 16))
+    if OG57N:                                            # everything but the two records is ogsq_fx30_v2's
+        v2 = json.loads((ROOT / "modding/designs/ogsq_fx30_v2.json").read_text(encoding="utf8"))
+        mine = {s["addr"]: s["new"] for s in sites}
+        theirs = {s["addr"]: s["new"] for s in v2["patches"]}
+        assert sorted(mine) == sorted(theirs) and [a for a in mine if mine[a] != theirs[a]] == [hex(PAIR["L"]), hex(PAIR["R"])], "more than the two records differ from ogsq_fx30_v2"
     # stored records: the FX30's own calculator, stock and with the cells, NTSC (60 Hz) and PAL (50 Hz) timing
     f = E.CONSTS[BUILD]["fields"]
     pal = [(f[0x2C], rd(f[0x30], 24 * NMODES))]
@@ -393,7 +411,10 @@ def main():
     out = {"design": DESIGN, "build": BUILD,
            "title": f"FX30 open gate, sensor side: 5952 x 3968 (3:2) window from row {NEW_ROW} in modes 0x820/0x880/0x890/0x8c0/0x8d0 (the sensor's "
                     "window registers in matrix column 1 and the tables that describe it), first stage 5976 x 3976 "
-                    "squeezed into the stock 4336 x 2438 front end, vertical sampling ratio 27/32",
+                    + ("reduced to a 5760 x 3840 front end (real 5.7K rows and columns), vertical sampling ratio 27/32 as ogsq_fx30_v2" if OG57N else
+                       "squeezed into the stock 4336 x 2438 front end, vertical sampling ratio 27/32"),
+           **({"variant_of": {"design": "ogsq_fx30_v2", "what": "only the two picture records differ: the first-stage scaler's picture is 5760 x 3840 "
+                              "(the A7 IV's og57n_v1 on the FX30's records); goes with og57cp_fx30_v1 and ogfile57r300m1_fx30_v4"}} if OG57N else {}),
            **({"variant_of": {"design": "ogsq_fx30_v2", "what": "LC +12 (first phase-detect row) = window row + 51 = %d instead of 25 + 48 k = %d, "
                               "read-out length %d instead of %d: the two values of the repo's issue 1; everything else is v2's"
                               % (sfacts["first_pdaf_row"], 25 + 48 * sfacts["first_block"], sfacts["readout_length"], (NEW_H + 12) // 2 + 24)}} if VARIANT_B else {}),
@@ -407,7 +428,8 @@ def main():
                        "sensor": sfacts["sensor"], "line_periods_per_frame_24p": 4410,
                        "readout_line_periods": sfacts["readout_length"], "lrc": lrc, "record_fields_changed": nfields,
                        "sites": len(sites), "bytes": sum(len(s["old"]) // 2 for s in sites),
-                       "expected_working_state": {"crop": [5952, NEW_H], "front_end": list(OUT), "second_scaler_takes": "the whole front end", "file": [3840, 2560]}},
+                       "expected_working_state": {"crop": [5952, NEW_H], "front_end": list(OUT), "second_scaler_takes": "the whole front end",
+                                                 "file": [5760, 3840] if OG57N else [3840, 2560]}},
            "patches": sites, "record_size": 0x160,
            "stored_records": {k: {"index": v["index"], "offsets_that_differ": v["offsets_that_differ"],
                                   "ntsc": {"stock": v["ntsc"]["stock"], "design": v["ntsc"]["design"]},

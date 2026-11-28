@@ -1,0 +1,433 @@
+{
+ "label": "fx30read_v2 5.7K",
+ "cp_lo": 786432,
+ "cp_hi": 40894464,
+ "avcam_phys": 17196646400,
+ "avcam_reserve": "@0x401000000",
+ "id_files": {
+  "/libmpr.so": "2ba4e927c2f9eef19802c46adbce8de3902536af300a9827b22356658924e9ce",
+  "/libsencore.so": "9f99fcda88a753508a6806a679e43f3cd7cb9dbe392722920957d53ac9186d0c",
+  "/libJiritsu.so": "563573d0a3286b3a76a7d5d8c1b9d53aab0895906e5dd89cbcdc588a6f0f555b"
+ },
+ "id_pages": {
+  "0x128000": "032d9f2a20654213791f1ec843f8ed4e468f516d8011b9e06bf481914bbdcc64",
+  "0x73c000": "7944ba324323317270507549809734408804c62257b232dd99d00443316afdcc",
+  "0x464000": "4ea14238a9995506a83a4aef963057ce7cc3ec305084403862498f4772b13cc0",
+  "0x8e7000": "bfd70b9869148456401c0c49fade608b83f6c1c562d3690b2a3e03cd1ec09b2c"
+ },
+ "cp_sites": [
+  {
+   "name": "record_left",
+   "address": "0xc79440",
+   "length": 3000,
+   "soft": 0
+  },
+  {
+   "name": "record_right",
+   "address": "0xc79ff8",
+   "length": 3000,
+   "soft": 0
+  },
+  {
+   "name": "geometry",
+   "address": "0xcb57c0",
+   "length": 72,
+   "soft": 0
+  },
+  {
+   "name": "crop",
+   "address": "0xd10e0c",
+   "length": 120,
+   "soft": 0
+  },
+  {
+   "name": "window",
+   "address": "0xe027d6",
+   "length": 228,
+   "soft": 0
+  },
+  {
+   "name": "pdaf",
+   "address": "0xe02c70",
+   "length": 228,
+   "soft": 0
+  },
+  {
+   "name": "lc",
+   "address": "0xe030da",
+   "length": 84,
+   "soft": 0
+  },
+  {
+   "name": "readout",
+   "address": "0xe0328c",
+   "length": 84,
+   "soft": 0
+  },
+  {
+   "name": "sensor_window",
+   "address": "0x1038d58",
+   "length": 160,
+   "soft": 0
+  },
+  {
+   "name": "stored_record_0x820",
+   "address": "0x20d9664",
+   "length": 352,
+   "soft": 1
+  },
+  {
+   "name": "stored_record_0x880",
+   "address": "0x20d9924",
+   "length": 352,
+   "soft": 1
+  },
+  {
+   "name": "stored_record_0x890",
+   "address": "0x20d9a84",
+   "length": 352,
+   "soft": 1
+  },
+  {
+   "name": "stored_record_0x8c0",
+   "address": "0x20d9be4",
+   "length": 352,
+   "soft": 1
+  },
+  {
+   "name": "stored_record_0x8d0",
+   "address": "0x20d9d44",
+   "length": 352,
+   "soft": 1
+  },
+  {
+   "name": "outsize0",
+   "address": "0x155d630",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "outsize1",
+   "address": "0x20b6c8c",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "outsize2",
+   "address": "0x20b6c88",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "outsize3",
+   "address": "0x155d448",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "outsize4",
+   "address": "0x155d444",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "outsize_guard0",
+   "address": "0x155d628",
+   "length": 8,
+   "soft": 1
+  },
+  {
+   "name": "outsize_guard1",
+   "address": "0x155d634",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "outsize_guard2",
+   "address": "0x20b6c80",
+   "length": 8,
+   "soft": 1
+  },
+  {
+   "name": "outsize_guard3",
+   "address": "0x20b6d60",
+   "length": 8,
+   "soft": 1
+  },
+  {
+   "name": "outsize_guard4",
+   "address": "0x20b8d60",
+   "length": 8,
+   "soft": 1
+  },
+  {
+   "name": "outsize_guard5",
+   "address": "0x155d43c",
+   "length": 8,
+   "soft": 1
+  },
+  {
+   "name": "screen0",
+   "address": "0x1e2f38",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen1",
+   "address": "0x1e2f3c",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen2",
+   "address": "0x1e2f90",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen3",
+   "address": "0x1e2f94",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen4",
+   "address": "0x1e2f98",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen5",
+   "address": "0x1e2f9c",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen6",
+   "address": "0x1e2fa0",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen7",
+   "address": "0x1e2fa4",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen8",
+   "address": "0x1e3048",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen9",
+   "address": "0x1e304c",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen10",
+   "address": "0x663b0c",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen11",
+   "address": "0x663b3c",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen12",
+   "address": "0xde78f4",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen13",
+   "address": "0xde78f8",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen14",
+   "address": "0xde791c",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen15",
+   "address": "0xde7920",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen16",
+   "address": "0xde7944",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen17",
+   "address": "0xde7948",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen18",
+   "address": "0xde796c",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen19",
+   "address": "0xde7970",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen20",
+   "address": "0xde7994",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen21",
+   "address": "0xde7998",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen22",
+   "address": "0xde79bc",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen23",
+   "address": "0xde79c0",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen24",
+   "address": "0xde79e4",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen25",
+   "address": "0xde79e8",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen26",
+   "address": "0xde7a0c",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen27",
+   "address": "0xde7a10",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen28",
+   "address": "0xde7a34",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen29",
+   "address": "0xde7a38",
+   "length": 4,
+   "soft": 1
+  }
+ ],
+ "variant_b_sites": [],
+ "lm_sites": 14,
+ "av_sites": 296,
+ "av_guards": [
+  "unit_rows_0_2",
+  "clip_rows_4_7",
+  "descriptors_0_3"
+ ],
+ "dump_ranges": [
+  [
+   "shadow",
+   "0x1123000",
+   2
+  ],
+  [
+   "matrix",
+   "0x1038000",
+   2
+  ],
+  [
+   "sizetable",
+   "0x155d000",
+   1
+  ],
+  [
+   "records",
+   "0x20d9000",
+   3
+  ],
+  [
+   "kprint",
+   "0xe0000",
+   32
+  ],
+  [
+   "bootlog",
+   "0xc0000",
+   8
+  ],
+  [
+   "resizestate",
+   "0x1571000",
+   3
+  ],
+  [
+   "resizework",
+   "0x12dd000",
+   1
+  ],
+  [
+   "paneltype",
+   "0x1629000",
+   1
+  ],
+  [
+   "display0",
+   "0x1e2000",
+   1
+  ],
+  [
+   "display1",
+   "0x1e3000",
+   1
+  ],
+  [
+   "display2",
+   "0x663000",
+   1
+  ],
+  [
+   "display3",
+   "0xde7000",
+   1
+  ]
+ ],
+ "designs": {
+  "og57n_fx30_v1": "ce12b28dd774be9e7dc4530f108666d8b1a19902de6fa81842be17e895a1b0e3",
+  "ogsq_fx30_v2b": "677a54af761c355990b32a1e6dcd82552a2920751c5d6296ee2486ced9d38156",
+  "og57cp_fx30_v1": "632e0eb2660a10420990b1169db2773546926402fb9b27648ccd77cedf94f854",
+  "ogfile57r300m1_fx30_v4": "b6227a73f0df44382baebb1829f5acfac1d3be4a9cb13e4362e9d91f47f8ad01",
+  "lcd32dsq_fx30_v1": "eade67d0b81afdad907e9289dfa7567a076bc7fcb9ee7cfea59305b47178df82",
+  "avdec8k_fx30_v1": "081186bc018bf340b925a4d12344917ee2d8c79f3f183e3e471ceed11352bf96"
+ }
+}

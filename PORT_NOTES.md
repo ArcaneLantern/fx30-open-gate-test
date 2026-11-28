@@ -2,7 +2,7 @@
 
 Everything here was read from the FX30 6.01 firmware update (`BODYDATA.DAT`, SHA-256 `33f287f3…28f9`, from Sony's support site) and checked in emulation. The working references are the open-gate states that record on the A7 IV (sensor method), the A7S III and the FX3 (kit shape, encoder, screen).
 
-**Camera runs so far.** Kit v1 ran on three FX30s (2026-11-25/26; one PAL with three dumps, two NTSC in the repo's issues 1 and 2). Kit v2 has not run.
+**Camera runs so far.** Kit v1 ran on three FX30s (2026-11-25/26; one PAL with three dumps, two NTSC in the repo's issues 1 and 2) and failed. **Kit v2 records on FX30s** (the repo's issues, 2026-11-26/27: NTSC and PAL, XAVC S 4K 23.98p / 25p, the whole 3840 × 2560 picture, right colours, sensor and records AGREE; default variant A). XAVC HS 4:2:2 restarts at record start; the power switch removes the image processor's part and keeps the encoder's. The 5.7K state (below) has not run.
 
 ## What the v1 runs showed
 
@@ -103,6 +103,36 @@ Everything here was read from the FX30 6.01 firmware update (`BODYDATA.DAT`, SHA
   | stock 5952 × 3348 | | all 2438 rows |
   | 5952 × 3968 | 1/1 | 2057 rows from row 190: the 16:9 cut the A7 IV showed without the ratio |
   | 5952 × 3968 | 27/32 | **all 2438 rows from row 0** |
+
+## 5.7K: `og57n_fx30_v1`, `og57cp_fx30_v1`, `ogfile57r300m1_fx30_v4` (steps K5, K16, K19; added 2026-11-28, not run)
+
+The A7 IV's real 5760 × 3840 state (which records on the A7 IV) at the FX30's addresses. The sensor side is `ogsq_fx30_v2`'s.
+
+- **K5 / K6, `og57n_fx30_v1`** (`build_og_fx30.py --og57n`): the two picture records for a first-stage picture of 5760 × 3840.
+  - Cells, sensor registers and the five stored records (with 27/32, as the A7 IV's 5.7K keeps it) equal `ogsq_fx30_v2` byte for byte (asserted).
+  - First scaler: 3016 × 3976 in, 2912 × 3844 out per half, step 4233/4096 in both directions (0.968). The row pad is 2 (the A7 IV's is 6): the firmware's own fit gives it, because 3976 stage rows hold 3847 output rows at this step.
+  - The records pass every rule of `lint_split_record.py`.
+  - `emu_rc_fit_fx30.py`: with 27/32 the second scaler takes 5760 × 3840 from 0, 0 (one to one); with 1/1 it would cut to 16:9. The request block for this case is made by analogy with the 4K one.
+- **K16 / K17, `og57cp_fx30_v1`** (`build_ram_words_fx30.py og57cp`), five words:
+
+  | RAM | Stock → new | What |
+  |---|---|---|
+  | `0x155d630` | 0 → 3 | scaler units: four (the split rule `0x46bdd4` = the A7 IV's `0x430d5c` reads it; table {1, 2, 4}) |
+  | `0x20b6c8c` | `0x20b8c88` → `0x20b8d60` | the memory manager's row of id 0x446 (row 241): the key list of id 0x498 (30,824,400-byte units) |
+  | `0x20b6c88` | 0x446 → 0x43f | that row's id: the id the firmware asks for a large output plane |
+  | `0x155d448` | 0x2d9 → 0x43f | the 4K size entry's buffer id |
+  | `0x155d444` | 3840 × 2160 → 5760 × 3840 | the 4K size entry (the word L16 changes) |
+
+  - The FX30's memory manager has the A7 IV's rows at the same indices (0x445 row 240, 0x446 row 241, 0x498 row 268), each 0x108180 higher. In its own allocator, with the change, 0x43f opens 30,824,400-byte units and the other movie buffers still open beside it.
+  - The setting's neighbours (`0x155d620`..`0x155d650`) read as zero in three dumps of a real FX30.
+- **K19 / K20, `ogfile57r300m1_fx30_v4`** (`build_og57.py --build fx30_601 --rate300 --m1all --meta`): 296 av-cam sites and 14 libmpr sites (10 instructions). M19 = `_v3`, the same without the nine MP4 size sites.
+  - Both encoder cores (the fields of Sony's own two-core formats), unit-type row 3 = {0x477, 0x486, 0x474, 0x47a}, 300 Mbps figures from the dormant 5760 × 3240 format, Level 6.1, PredMode and MParam 3 → 1 in all 29 descriptors, the HEVC edit list at 0 (`0x11d5e4`).
+  - MP4 size sites: `0x21ff68` / `0x21ff6c` (AVC height, width), `0x2200a0` / `0x2200a4` (HEVC), the 7680 compares `0x221538` and `0x22310c`, the three profile-id width loads `0x222aec`, `0x222f28`, `0x222f74`.
+  - Emulated: `run_og57_emu_fx30.py` 18 checks (matcher, clip code, memory ids, codec memory in the FX30's blocks, no B pictures, start block); `emu_mp4_meta.py --build fx30_601 --both` 416 requests; `emu_elst_site_v3.py --build fx30_601` 336 cases.
+- **Read side:** `check57` / `dump57` are the same helper built with the 5.7K designs as targets (`gen_fx30.py --57`); their encoder-site table is packed so the library fits one upload packet (65,520 bytes). The ordinary check calls the 5.7K state NOT READY.
+- **Kit:** `fx30_apply.py apply --57` (K5, K16, K19 or M19, S16, closing `dump57`), `putback --57`; a plain put back follows each 4K put back that wrote nothing with its 5.7K twin.
+- **Emulation of the steps:** `emu_fx30_write.py` 162 cases (apply, again, put back; 4K and 5.7K steps writing nothing over each other; lost writes; guards), `emu_fx30.py` 42, `test_fx30_dump_decode.py` 16.
+- **Not known:** whether the first stage, the scaler and the encoder take this size on an FX30; SteadyShot Active (asks for a larger picture); XAVC HS; playback.
 
 ## Raw write buffer: no step
 

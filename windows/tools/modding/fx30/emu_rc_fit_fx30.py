@@ -36,7 +36,7 @@ SHIFT = 0x1573A30 - 0x1452488
 SETTINGS = {a + SHIFT: b for a, b in AIV.SETTINGS.items()}
 
 
-def run(ref, pa=(1, 1, 1, 1), width=5952):
+def run(ref, pa=(1, 1, 1, 1), width=5952, front=None, out=None):
     uc = Uc(UC_ARCH_ARM, UC_MODE_THUMB)
     try:
         uc.ctl_set_cpu_model(A.UC_CPU_ARM_CORTEX_A15)
@@ -50,6 +50,10 @@ def run(ref, pa=(1, 1, 1, 1), width=5952):
         uc.mem_write(a, b)
     w = list(AIV.INPUT_4K)
     w[13], w[14] = width, ref
+    if front:                                        # another first-stage picture and output size (2026-11-28, the 5.7K step): words 5..12 of the input
+        # block are {front end w, h, output w, h, left half w, h, right half w, h} (4336, 2438, 3840, 2160, 2176, 2438, 2160, 2438 in the 4K request)
+        w[5], w[6], w[7], w[8] = front[0], front[1], out[0], out[1]
+        w[9], w[10], w[11], w[12] = front[0] // 2, front[1], front[0] // 2, front[1]
     w[1], w[2], w[3], w[4] = pa[1], pa[3], pa[0], pa[2]
     uc.mem_write(INP, struct.pack("<20I", *w))
     uc.mem_write(PRM, AIV.PARAM_4K + bytes(0xBC - len(AIV.PARAM_4K)))
@@ -102,13 +106,25 @@ def main():
         res["cases"][name] = {"fx30": e, "a7iv_same_case_7008_wide": {k: a[k] for k in ("start", "size", "pixel_aspect_q12")}}
         print(f"{name:58} FX30 takes {e['size']} from {e['start']} (pixel aspect {e['pixel_aspect_q12']}) {e['error'] or ''}"
               f" | A7 IV {a['size']} from {a['start']}")
+    # 2026-11-28, the 5.7K step (og57n_fx30_v1 + og57cp_fx30_v1): the first stage gives 5760 x 3840 and the output size word says 5760 x 3840. The
+    # input block for it is made by analogy with the 4K one (the halves 2880 wide), not read from a camera or from the set-up's emulation.
+    for name, pa in (("5.7K: front end 5760x3840, output 5760x3840, ratio 27/32 (og57n_fx30_v1)", (1, 1, 27, 32)),
+                     ("5.7K: front end 5760x3840, output 5760x3840, ratio 1/1", (1, 1, 1, 1))):
+        e = run(3968, pa, front=(5760, 3840), out=(5760, 3840))
+        res["cases"][name] = {"fx30": e, "input": "by analogy with the 4K request block"}
+        print(f"{name:58} FX30 takes {e['size']} from {e['start']} (pixel aspect {e['pixel_aspect_q12']}) {e['error'] or ''}")
     c = res["cases"]
     ok = (all(v["fx30"]["error"] is None for v in c.values())
           and c["stock 16:9 window 5952x3348"]["fx30"]["size"][1] > 2437.9
           and c["open gate 5952x3968, ratio 1/1 (the A7 IV's ogsq_v2 case)"]["fx30"]["size"][1] < 2100
           and c["open gate 5952x3968, ratio 27/32 (ogsq_fx30_v2)"]["fx30"]["size"][1] > 2437.9
           and c["open gate 5952x3968, ratio 27/32 (ogsq_fx30_v2)"]["fx30"]["start"][1] < 1)
+    k57 = c["5.7K: front end 5760x3840, output 5760x3840, ratio 27/32 (og57n_fx30_v1)"]["fx30"]
+    ok57 = k57["error"] is None and k57["size"][1] > 3839.9 and k57["size"][0] > 5755 and k57["start"][1] < 1
     res["lever_keeps_every_row"] = ok
+    res["5.7K_takes_the_whole_front_end"] = ok57
+    print("5.7K with 27/32 takes the whole 5760 x 3840 front end:", ok57)
+    ok = ok and ok57
     out = ROOT / "evidence/fx30/sensor/rc_fit_fx30_emu.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(res, indent=1) + "\n", encoding="utf8", newline="\n")

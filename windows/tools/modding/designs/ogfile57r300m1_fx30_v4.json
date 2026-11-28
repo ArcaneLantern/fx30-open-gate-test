@@ -1,0 +1,5015 @@
+{
+ "design": "ogfile57r300m1_fx30_v4",
+ "title": "A 5760 by 3840 file on XAVC HS 4K and XAVC S 4K at 23.98p and 25p: encoder request, two encoder cores, the 4K memory blocks in an order that holds the picture, descriptors, profiles and the monitoring label; every record setting with I and P pictures only (M = 1), and the MP4 edit list starting at 0; the MP4 headers (tkhd, stsd, PROF) say 5760x3840",
+ "generated_by": "build/build_og57.py --build fx30_601 --rate300 --m1all --meta",
+ "family": "hs_s",
+ "build": "fx30_601",
+ "format": "XAVC HS 4K (HEVC) and XAVC S 4K (AVC)",
+ "raster": [
+  5760,
+  3840
+ ],
+ "rates": [
+  "23.98p",
+  "25p"
+ ],
+ "goes_with": "og57n_fx30_v1 (the real 5760x3840 picture from the 5952x3968 window) and og57cp_fx30_v1, all in coprocessor RAM",
+ "artifact_sha256": {
+  "libmpr.so": "2ba4e927c2f9eef19802c46adbce8de3902536af300a9827b22356658924e9ce",
+  "av-cam.bin": "35a17d2db0131a1c2a83f29a11722b69924ea70eae801ff69d343cecddded8a3"
+ },
+ "summary": {
+  "libmpr.so": {
+   "sites": 14,
+   "bytes": 56,
+   "code_sites": 10
+  },
+  "av-cam.bin": {
+   "sites": 296,
+   "bytes": 1713,
+   "code_sites": 0
+  }
+ },
+ "sites_by_kind": {
+  "L1-comb": 4,
+  "A0-unit": 1,
+  "A1-desc": 58,
+  "A2-profile": 116,
+  "A2-rate": 33,
+  "A2-level": 29,
+  "A4-pred": 29,
+  "A4-mparam": 29,
+  "L3-elst": 1,
+  "A3-clip": 1,
+  "L4-mp4size": 9
+ },
+ "level": "Level 6 (HEVC 180, AVC 60); Level 6.1 (183, 61) in the 300 Mbps profiles",
+ "encoder_cores": "both (UseCore 2), as every stock descriptor above 249 million pixels a second",
+ "memory_blocks_row_3": {
+  "order": [
+   "frame buffer CD",
+   "frame buffer LD",
+   "multi buffer",
+   "ES buffer"
+  ],
+  "ids": [
+   "0x477",
+   "0x486",
+   "0x474",
+   "0x47a"
+  ]
+ },
+ "rule_checked_against_sonys_own_two_core_profiles": {
+  "hs": [
+   {
+    "format": "4:2:0 10-bit",
+    "reference": "descriptor #470, 5760x3240, quality class 15, key 101200",
+    "against": "descriptor #408, key 102000",
+    "rows_for_first_core": 1632,
+    "level_byte": 183,
+    "bytes_that_differ_outside_class_and_key": [
+     "0x34",
+     "0x35",
+     "0x38",
+     "0x39",
+     "0x4",
+     "0x4c",
+     "0x4d",
+     "0x5",
+     "0x56",
+     "0x57",
+     "0x6",
+     "0x7",
+     "0x8a",
+     "0x8b",
+     "0x8c",
+     "0x8d",
+     "0x9e"
+    ]
+   },
+   {
+    "format": "4:2:2 10-bit",
+    "reference": "descriptor #467, 5760x3240, quality class 15, key 101000",
+    "against": "descriptor #406, key 101702",
+    "rows_for_first_core": 1632,
+    "level_byte": 183,
+    "bytes_that_differ_outside_class_and_key": [
+     "0x34",
+     "0x35",
+     "0x38",
+     "0x39",
+     "0x4",
+     "0x4c",
+     "0x4d",
+     "0x5",
+     "0x56",
+     "0x57",
+     "0x6",
+     "0x7",
+     "0x8a",
+     "0x8b",
+     "0x8c",
+     "0x8d",
+     "0x9e"
+    ]
+   }
+  ],
+  "s": [
+   {
+    "format": "4:2:0 8-bit",
+    "reference": "descriptor #34, 7680x4320, quality class 13, key 100800",
+    "against": "descriptor #6, key 4",
+    "rows_for_first_core": 2160,
+    "level_byte": 61,
+    "bytes_that_differ_outside_class_and_key": [
+     "0x35",
+     "0x38",
+     "0x39",
+     "0x4c",
+     "0x4d",
+     "0x5",
+     "0x56",
+     "0x57",
+     "0x6",
+     "0x7",
+     "0x8f",
+     "0x90",
+     "0x91",
+     "0xa7"
+    ]
+   },
+   {
+    "format": "4:2:0 8-bit",
+    "reference": "descriptor #36, 7680x4320, quality class 21, key 100801",
+    "against": "descriptor #6, key 4",
+    "rows_for_first_core": 2160,
+    "level_byte": 60,
+    "bytes_that_differ_outside_class_and_key": [
+     "0x35",
+     "0x38",
+     "0x39",
+     "0x4c",
+     "0x4d",
+     "0x5",
+     "0x56",
+     "0x57",
+     "0x6",
+     "0x7",
+     "0x8f",
+     "0x90",
+     "0x91",
+     "0xa7"
+    ]
+   },
+   {
+    "format": "4:2:2 10-bit",
+    "reference": null
+   }
+  ]
+ },
+ "while_applied": [
+  "the formats' other frame rates find no descriptor: their recordings are refused at encoder open",
+  "other formats are not touched",
+  "the container and the metadata still say 3840 by 2160",
+  "the 100M record settings (and any higher one of these formats) record at 300 Mbps; the lower settings keep their bit rate; the menu, the remaining-time figure and the container's own bit-rate fields still say what the setting says",
+  "every record setting of XAVC HS 4K and XAVC S 4K at 23.98p and 25p records with M = 1: I and P pictures only, no B pictures, no picture reordering",
+  "an HEVC MP4 recorded normally has a video edit list starting at 0 (libmpr.so 0x11f4e0); right for M = 1 HEVC. AVC keeps its one-frame start, which its constant one-frame composition offset needs (C0557). An HEVC stream with B pictures would show its first picture one frame late",
+  "the MP4 headers of XAVC HS 4K and XAVC S 4K files say 5760x3840 (3:2); Sony's XML in the file still says 3840x2160, 16:9"
+ ],
+ "descriptors": [
+  {
+   "descriptor": 406,
+   "family": "hs",
+   "format": "4:2:2 10-bit",
+   "rate": "23.98p",
+   "coding_rate_code": 5,
+   "input_rate": 0,
+   "quality_class": 26,
+   "f0c": 0,
+   "profile_key": 101702,
+   "pred_mode": 3,
+   "level_byte": 150,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 407,
+   "family": "hs",
+   "format": "4:2:0 10-bit",
+   "rate": "25p",
+   "coding_rate_code": 3,
+   "input_rate": 0,
+   "quality_class": 26,
+   "f0c": 0,
+   "profile_key": 101901,
+   "pred_mode": 3,
+   "level_byte": 150,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 408,
+   "family": "hs",
+   "format": "4:2:0 10-bit",
+   "rate": "23.98p",
+   "coding_rate_code": 5,
+   "input_rate": 0,
+   "quality_class": 26,
+   "f0c": 0,
+   "profile_key": 102000,
+   "pred_mode": 3,
+   "level_byte": 150,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 428,
+   "family": "hs",
+   "format": "4:2:2 10-bit",
+   "rate": "25p",
+   "coding_rate_code": 3,
+   "input_rate": 0,
+   "quality_class": 24,
+   "f0c": 0,
+   "profile_key": 101609,
+   "pred_mode": 3,
+   "level_byte": 150,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 480,
+   "family": "hs",
+   "format": "4:2:2 10-bit",
+   "rate": "25p",
+   "coding_rate_code": 3,
+   "input_rate": 0,
+   "quality_class": 36,
+   "f0c": 0,
+   "profile_key": 101607,
+   "pred_mode": 3,
+   "level_byte": 150,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 481,
+   "family": "hs",
+   "format": "4:2:2 10-bit",
+   "rate": "23.98p",
+   "coding_rate_code": 5,
+   "input_rate": 0,
+   "quality_class": 36,
+   "f0c": 0,
+   "profile_key": 101703,
+   "pred_mode": 3,
+   "level_byte": 150,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 511,
+   "family": "hs",
+   "format": "4:2:0 10-bit",
+   "rate": "25p",
+   "coding_rate_code": 3,
+   "input_rate": 0,
+   "quality_class": 41,
+   "f0c": 0,
+   "profile_key": 101907,
+   "pred_mode": 3,
+   "level_byte": 150,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 512,
+   "family": "hs",
+   "format": "4:2:0 10-bit",
+   "rate": "23.98p",
+   "coding_rate_code": 5,
+   "input_rate": 0,
+   "quality_class": 41,
+   "f0c": 0,
+   "profile_key": 102003,
+   "pred_mode": 3,
+   "level_byte": 150,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 520,
+   "family": "hs",
+   "format": "4:2:0 10-bit",
+   "rate": "25p",
+   "coding_rate_code": 3,
+   "input_rate": 0,
+   "quality_class": 34,
+   "f0c": 0,
+   "profile_key": 101905,
+   "pred_mode": 3,
+   "level_byte": 150,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 521,
+   "family": "hs",
+   "format": "4:2:0 10-bit",
+   "rate": "23.98p",
+   "coding_rate_code": 5,
+   "input_rate": 0,
+   "quality_class": 34,
+   "f0c": 0,
+   "profile_key": 102002,
+   "pred_mode": 3,
+   "level_byte": 150,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 537,
+   "family": "hs",
+   "format": "4:2:2 10-bit",
+   "rate": "23.98p",
+   "coding_rate_code": 5,
+   "input_rate": 0,
+   "quality_class": 34,
+   "f0c": 0,
+   "profile_key": 101705,
+   "pred_mode": 3,
+   "level_byte": 150,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 563,
+   "family": "hs",
+   "format": "4:2:2 10-bit",
+   "rate": "25p",
+   "coding_rate_code": 3,
+   "input_rate": 0,
+   "quality_class": 32,
+   "f0c": 0,
+   "profile_key": 101611,
+   "pred_mode": 3,
+   "level_byte": 150,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 5,
+   "family": "s",
+   "format": "4:2:0 8-bit",
+   "rate": "25p",
+   "coding_rate_code": 3,
+   "input_rate": 0,
+   "quality_class": 26,
+   "f0c": 0,
+   "profile_key": 3,
+   "pred_mode": 3,
+   "level_byte": 51,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 6,
+   "family": "s",
+   "format": "4:2:0 8-bit",
+   "rate": "23.98p",
+   "coding_rate_code": 5,
+   "input_rate": 0,
+   "quality_class": 26,
+   "f0c": 0,
+   "profile_key": 4,
+   "pred_mode": 3,
+   "level_byte": 51,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 8,
+   "family": "s",
+   "format": "4:2:0 8-bit",
+   "rate": "25p",
+   "coding_rate_code": 3,
+   "input_rate": 0,
+   "quality_class": 33,
+   "f0c": 0,
+   "profile_key": 6,
+   "pred_mode": 3,
+   "level_byte": 51,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 9,
+   "family": "s",
+   "format": "4:2:0 8-bit",
+   "rate": "23.98p",
+   "coding_rate_code": 5,
+   "input_rate": 0,
+   "quality_class": 33,
+   "f0c": 0,
+   "profile_key": 7,
+   "pred_mode": 3,
+   "level_byte": 51,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 40,
+   "family": "s",
+   "format": "4:2:2 10-bit",
+   "rate": "25p",
+   "coding_rate_code": 3,
+   "input_rate": 0,
+   "quality_class": 24,
+   "f0c": 0,
+   "profile_key": 102501,
+   "pred_mode": 3,
+   "level_byte": 51,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 41,
+   "family": "s",
+   "format": "4:2:2 10-bit",
+   "rate": "23.98p",
+   "coding_rate_code": 5,
+   "input_rate": 0,
+   "quality_class": 24,
+   "f0c": 0,
+   "profile_key": 102600,
+   "pred_mode": 3,
+   "level_byte": 51,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 43,
+   "family": "s",
+   "format": "4:2:2 10-bit",
+   "rate": "25p",
+   "coding_rate_code": 3,
+   "input_rate": 0,
+   "quality_class": 34,
+   "f0c": 0,
+   "profile_key": 102503,
+   "pred_mode": 3,
+   "level_byte": 51,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 44,
+   "family": "s",
+   "format": "4:2:2 10-bit",
+   "rate": "23.98p",
+   "coding_rate_code": 5,
+   "input_rate": 0,
+   "quality_class": 34,
+   "f0c": 0,
+   "profile_key": 102601,
+   "pred_mode": 3,
+   "level_byte": 51,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 58,
+   "family": "s",
+   "format": "4:2:0 8-bit",
+   "rate": "25p",
+   "coding_rate_code": 3,
+   "input_rate": 0,
+   "quality_class": 34,
+   "f0c": 0,
+   "profile_key": 102909,
+   "pred_mode": 3,
+   "level_byte": 51,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 59,
+   "family": "s",
+   "format": "4:2:0 8-bit",
+   "rate": "23.98p",
+   "coding_rate_code": 5,
+   "input_rate": 0,
+   "quality_class": 34,
+   "f0c": 0,
+   "profile_key": 103004,
+   "pred_mode": 3,
+   "level_byte": 51,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 61,
+   "family": "s",
+   "format": "4:2:0 8-bit",
+   "rate": "25p",
+   "coding_rate_code": 3,
+   "input_rate": 0,
+   "quality_class": 4,
+   "f0c": 0,
+   "profile_key": 102911,
+   "pred_mode": 3,
+   "level_byte": 51,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 62,
+   "family": "s",
+   "format": "4:2:0 8-bit",
+   "rate": "23.98p",
+   "coding_rate_code": 5,
+   "input_rate": 0,
+   "quality_class": 4,
+   "f0c": 0,
+   "profile_key": 103005,
+   "pred_mode": 3,
+   "level_byte": 51,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 75,
+   "family": "s",
+   "format": "4:2:2 10-bit",
+   "rate": "25p",
+   "coding_rate_code": 3,
+   "input_rate": 0,
+   "quality_class": 21,
+   "f0c": 0,
+   "profile_key": 102409,
+   "pred_mode": 3,
+   "level_byte": 51,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 76,
+   "family": "s",
+   "format": "4:2:2 10-bit",
+   "rate": "23.98p",
+   "coding_rate_code": 5,
+   "input_rate": 0,
+   "quality_class": 21,
+   "f0c": 0,
+   "profile_key": 102410,
+   "pred_mode": 3,
+   "level_byte": 51,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 78,
+   "family": "s",
+   "format": "4:2:2 10-bit",
+   "rate": "25p",
+   "coding_rate_code": 3,
+   "input_rate": 0,
+   "quality_class": 39,
+   "f0c": 0,
+   "profile_key": 102603,
+   "pred_mode": 3,
+   "level_byte": 51,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 79,
+   "family": "s",
+   "format": "4:2:2 10-bit",
+   "rate": "23.98p",
+   "coding_rate_code": 5,
+   "input_rate": 0,
+   "quality_class": 39,
+   "f0c": 0,
+   "profile_key": 102604,
+   "pred_mode": 3,
+   "level_byte": 51,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  },
+  {
+   "descriptor": 141,
+   "family": "s",
+   "format": "4:2:2 10-bit",
+   "rate": "23.98p",
+   "coding_rate_code": 5,
+   "input_rate": 0,
+   "quality_class": 26,
+   "f0c": 0,
+   "profile_key": 102607,
+   "pred_mode": 3,
+   "level_byte": 51,
+   "pred_mode_design": 1,
+   "m_param_design": 1
+  }
+ ],
+ "patches": [
+  {
+   "binary": "libmpr.so",
+   "kind": "L1-comb",
+   "file_off": "0x2cb1b4",
+   "va": "0x2cb1b4",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "g_videoParamComb row 5 (HEVC 4:2:0 10-bit): 3840x2160 -> 5760x3840 (the encoder request's raster)",
+   "code": false
+  },
+  {
+   "binary": "libmpr.so",
+   "kind": "L1-comb",
+   "file_off": "0x2cb1e4",
+   "va": "0x2cb1e4",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "g_videoParamComb row 7 (HEVC 4:2:2 10-bit): 3840x2160 -> 5760x3840 (the encoder request's raster)",
+   "code": false
+  },
+  {
+   "binary": "libmpr.so",
+   "kind": "L1-comb",
+   "file_off": "0x2cb13c",
+   "va": "0x2cb13c",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "g_videoParamComb row 0 (AVC 4:2:0 8-bit): 3840x2160 -> 5760x3840 (the encoder request's raster)",
+   "code": false
+  },
+  {
+   "binary": "libmpr.so",
+   "kind": "L1-comb",
+   "file_off": "0x2cb16c",
+   "va": "0x2cb16c",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "g_videoParamComb row 2 (AVC 4:2:2 10-bit): 3840x2160 -> 5760x3840 (the encoder request's raster)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A0-unit",
+   "file_off": "0x3926e8",
+   "va": "0xffffffc0013926e8",
+   "old": "00000000730400007604000079040000",
+   "new": "7704000086040000740400007a040000",
+   "note": "unit-type table row 3 (above 8,847,360 pixels; ids 0, 0x473, 0x476, 0x479, none of which has memory on this camera) := the 4K class's four blocks in another order: frame buffer CD 0x477 (14.2 MB), LD 0x486 (100.8 MB), multi buffer 0x474 (50.8 MB), ES buffer 0x47a (138.7 MB)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a0bf0",
+   "va": "0xffffffc0013a0bf0",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #406 (XAVC HS 4K (HEVC), 4:2:2 10-bit, 23.98p, quality class 26, key 101702): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a0c30",
+   "va": "0xffffffc0013a0c30",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #406 (XAVC HS 4K (HEVC), 4:2:2 10-bit, 23.98p, quality class 26, key 101702): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c41ec",
+   "va": "0xffffffc0013c41ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 101702: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c421c",
+   "va": "0xffffffc0013c421c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 101702: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c4272",
+   "va": "0xffffffc0013c4272",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 101702: raster +0x8a -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c4234",
+   "va": "0xffffffc0013c4234",
+   "old": "801600000e00020101010000",
+   "new": "c02100000e00020101018007",
+   "note": "profile key 101702: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3c4294",
+   "va": "0xffffffc0013c4294",
+   "old": "0000000068201700",
+   "new": "02000000a2e11100",
+   "note": "profile key 101702: bit rate +0xac: 97.0 -> 300.0 million (shift and value 0, 1515624 -> 2, 1171874; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3c429c",
+   "va": "0xffffffc0013c429c",
+   "old": "07000000ae2f0000",
+   "new": "0900000086280000",
+   "note": "profile key 101702: highest bit rate +0xb4: 100.0 -> 339.9 million (shift and value 7, 12206 -> 9, 10374; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3c42a4",
+   "va": "0xffffffc0013c42a4",
+   "old": "05000000effa0200",
+   "new": "070000007e880200",
+   "note": "profile key 101702: stream buffer +0xbc: 100.0 -> 340.0 million (shift and value 5, 195311 -> 7, 166014; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3c4286",
+   "va": "0xffffffc0013c4286",
+   "old": "96",
+   "new": "b7",
+   "note": "profile key 101702: level 150 -> 183 (Level 6.1: the level of Sony's own 300 Mbps 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a0c80",
+   "va": "0xffffffc0013a0c80",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #407 (XAVC HS 4K (HEVC), 4:2:0 10-bit, 25p, quality class 26, key 101901): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a0cc0",
+   "va": "0xffffffc0013a0cc0",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #407 (XAVC HS 4K (HEVC), 4:2:0 10-bit, 25p, quality class 26, key 101901): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c42ec",
+   "va": "0xffffffc0013c42ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 101901: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c431c",
+   "va": "0xffffffc0013c431c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 101901: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c4372",
+   "va": "0xffffffc0013c4372",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 101901: raster +0x8a -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c4334",
+   "va": "0xffffffc0013c4334",
+   "old": "801600000e00020101010000",
+   "new": "c02100000e00020101018007",
+   "note": "profile key 101901: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3c4394",
+   "va": "0xffffffc0013c4394",
+   "old": "0000000068201700",
+   "new": "02000000a2e11100",
+   "note": "profile key 101901: bit rate +0xac: 97.0 -> 300.0 million (shift and value 0, 1515624 -> 2, 1171874; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3c439c",
+   "va": "0xffffffc0013c439c",
+   "old": "07000000ae2f0000",
+   "new": "0900000086280000",
+   "note": "profile key 101901: highest bit rate +0xb4: 100.0 -> 339.9 million (shift and value 7, 12206 -> 9, 10374; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3c43a4",
+   "va": "0xffffffc0013c43a4",
+   "old": "05000000effa0200",
+   "new": "070000007e880200",
+   "note": "profile key 101901: stream buffer +0xbc: 100.0 -> 340.0 million (shift and value 5, 195311 -> 7, 166014; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3c4386",
+   "va": "0xffffffc0013c4386",
+   "old": "96",
+   "new": "b7",
+   "note": "profile key 101901: level 150 -> 183 (Level 6.1: the level of Sony's own 300 Mbps 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a0d10",
+   "va": "0xffffffc0013a0d10",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #408 (XAVC HS 4K (HEVC), 4:2:0 10-bit, 23.98p, quality class 26, key 102000): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a0d50",
+   "va": "0xffffffc0013a0d50",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #408 (XAVC HS 4K (HEVC), 4:2:0 10-bit, 23.98p, quality class 26, key 102000): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c43ec",
+   "va": "0xffffffc0013c43ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102000: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c441c",
+   "va": "0xffffffc0013c441c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 102000: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c4472",
+   "va": "0xffffffc0013c4472",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102000: raster +0x8a -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c4434",
+   "va": "0xffffffc0013c4434",
+   "old": "801600000e00020101010000",
+   "new": "c02100000e00020101018007",
+   "note": "profile key 102000: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3c4494",
+   "va": "0xffffffc0013c4494",
+   "old": "0000000068201700",
+   "new": "02000000a2e11100",
+   "note": "profile key 102000: bit rate +0xac: 97.0 -> 300.0 million (shift and value 0, 1515624 -> 2, 1171874; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3c449c",
+   "va": "0xffffffc0013c449c",
+   "old": "07000000ae2f0000",
+   "new": "0900000086280000",
+   "note": "profile key 102000: highest bit rate +0xb4: 100.0 -> 339.9 million (shift and value 7, 12206 -> 9, 10374; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3c44a4",
+   "va": "0xffffffc0013c44a4",
+   "old": "05000000effa0200",
+   "new": "070000007e880200",
+   "note": "profile key 102000: stream buffer +0xbc: 100.0 -> 340.0 million (shift and value 5, 195311 -> 7, 166014; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3c4486",
+   "va": "0xffffffc0013c4486",
+   "old": "96",
+   "new": "b7",
+   "note": "profile key 102000: level 150 -> 183 (Level 6.1: the level of Sony's own 300 Mbps 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a1850",
+   "va": "0xffffffc0013a1850",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #428 (XAVC HS 4K (HEVC), 4:2:2 10-bit, 25p, quality class 24, key 101609): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a1890",
+   "va": "0xffffffc0013a1890",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #428 (XAVC HS 4K (HEVC), 4:2:2 10-bit, 25p, quality class 24, key 101609): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c57ec",
+   "va": "0xffffffc0013c57ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 101609: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c581c",
+   "va": "0xffffffc0013c581c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 101609: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c5872",
+   "va": "0xffffffc0013c5872",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 101609: raster +0x8a -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c5834",
+   "va": "0xffffffc0013c5834",
+   "old": "801600000e00020101010000",
+   "new": "c02100000e00020101018007",
+   "note": "profile key 101609: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3c5894",
+   "va": "0xffffffc0013c5894",
+   "old": "080000005f210000",
+   "new": "02000000a2e11100",
+   "note": "profile key 101609: bit rate +0xac: 140.0 -> 300.0 million (shift and value 8, 8543 -> 2, 1171874; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3c589c",
+   "va": "0xffffffc0013c589c",
+   "old": "080000005f210000",
+   "new": "0900000086280000",
+   "note": "profile key 101609: highest bit rate +0xb4: 140.0 -> 339.9 million (shift and value 8, 8543 -> 9, 10374; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3c58a4",
+   "va": "0xffffffc0013c58a4",
+   "old": "060000000d160200",
+   "new": "070000007e880200",
+   "note": "profile key 101609: stream buffer +0xbc: 140.0 -> 340.0 million (shift and value 6, 136717 -> 7, 166014; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3c5886",
+   "va": "0xffffffc0013c5886",
+   "old": "96",
+   "new": "b7",
+   "note": "profile key 101609: level 150 -> 183 (Level 6.1: the level of Sony's own 300 Mbps 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a3590",
+   "va": "0xffffffc0013a3590",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #480 (XAVC HS 4K (HEVC), 4:2:2 10-bit, 25p, quality class 36, key 101607): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a35d0",
+   "va": "0xffffffc0013a35d0",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #480 (XAVC HS 4K (HEVC), 4:2:2 10-bit, 25p, quality class 36, key 101607): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c8bec",
+   "va": "0xffffffc0013c8bec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 101607: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c8c1c",
+   "va": "0xffffffc0013c8c1c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 101607: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c8c72",
+   "va": "0xffffffc0013c8c72",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 101607: raster +0x8a -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c8c34",
+   "va": "0xffffffc0013c8c34",
+   "old": "801600000e00020101010000",
+   "new": "c02100000e00020101018007",
+   "note": "profile key 101607: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3c8c86",
+   "va": "0xffffffc0013c8c86",
+   "old": "96",
+   "new": "b4",
+   "note": "profile key 101607: level 150 -> 180 (Level 6: the lowest level whose picture size limit holds 5760 by 3840; Sony's 7680-wide profiles of the same bit-rate range carry it)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a3620",
+   "va": "0xffffffc0013a3620",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #481 (XAVC HS 4K (HEVC), 4:2:2 10-bit, 23.98p, quality class 36, key 101703): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a3660",
+   "va": "0xffffffc0013a3660",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #481 (XAVC HS 4K (HEVC), 4:2:2 10-bit, 23.98p, quality class 36, key 101703): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c8cec",
+   "va": "0xffffffc0013c8cec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 101703: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c8d1c",
+   "va": "0xffffffc0013c8d1c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 101703: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c8d72",
+   "va": "0xffffffc0013c8d72",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 101703: raster +0x8a -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3c8d34",
+   "va": "0xffffffc0013c8d34",
+   "old": "801600000e00020101010000",
+   "new": "c02100000e00020101018007",
+   "note": "profile key 101703: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3c8d86",
+   "va": "0xffffffc0013c8d86",
+   "old": "96",
+   "new": "b4",
+   "note": "profile key 101703: level 150 -> 180 (Level 6: the lowest level whose picture size limit holds 5760 by 3840; Sony's 7680-wide profiles of the same bit-rate range carry it)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a4700",
+   "va": "0xffffffc0013a4700",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #511 (XAVC HS 4K (HEVC), 4:2:0 10-bit, 25p, quality class 41, key 101907): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a4740",
+   "va": "0xffffffc0013a4740",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #511 (XAVC HS 4K (HEVC), 4:2:0 10-bit, 25p, quality class 41, key 101907): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3caaec",
+   "va": "0xffffffc0013caaec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 101907: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cab1c",
+   "va": "0xffffffc0013cab1c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 101907: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cab72",
+   "va": "0xffffffc0013cab72",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 101907: raster +0x8a -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cab34",
+   "va": "0xffffffc0013cab34",
+   "old": "801600000e00020101010000",
+   "new": "c02100000e00020101018007",
+   "note": "profile key 101907: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3cab86",
+   "va": "0xffffffc0013cab86",
+   "old": "96",
+   "new": "b4",
+   "note": "profile key 101907: level 150 -> 180 (Level 6: the lowest level whose picture size limit holds 5760 by 3840; Sony's 7680-wide profiles of the same bit-rate range carry it)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a4790",
+   "va": "0xffffffc0013a4790",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #512 (XAVC HS 4K (HEVC), 4:2:0 10-bit, 23.98p, quality class 41, key 102003): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a47d0",
+   "va": "0xffffffc0013a47d0",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #512 (XAVC HS 4K (HEVC), 4:2:0 10-bit, 23.98p, quality class 41, key 102003): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cabec",
+   "va": "0xffffffc0013cabec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102003: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cac1c",
+   "va": "0xffffffc0013cac1c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 102003: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cac72",
+   "va": "0xffffffc0013cac72",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102003: raster +0x8a -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cac34",
+   "va": "0xffffffc0013cac34",
+   "old": "801600000e00020101010000",
+   "new": "c02100000e00020101018007",
+   "note": "profile key 102003: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3cac86",
+   "va": "0xffffffc0013cac86",
+   "old": "96",
+   "new": "b4",
+   "note": "profile key 102003: level 150 -> 180 (Level 6: the lowest level whose picture size limit holds 5760 by 3840; Sony's 7680-wide profiles of the same bit-rate range carry it)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a4c10",
+   "va": "0xffffffc0013a4c10",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #520 (XAVC HS 4K (HEVC), 4:2:0 10-bit, 25p, quality class 34, key 101905): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a4c50",
+   "va": "0xffffffc0013a4c50",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #520 (XAVC HS 4K (HEVC), 4:2:0 10-bit, 25p, quality class 34, key 101905): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cb3ec",
+   "va": "0xffffffc0013cb3ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 101905: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cb41c",
+   "va": "0xffffffc0013cb41c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 101905: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cb472",
+   "va": "0xffffffc0013cb472",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 101905: raster +0x8a -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cb434",
+   "va": "0xffffffc0013cb434",
+   "old": "801600000e00020101010000",
+   "new": "c02100000e00020101018007",
+   "note": "profile key 101905: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3cb486",
+   "va": "0xffffffc0013cb486",
+   "old": "96",
+   "new": "b4",
+   "note": "profile key 101905: level 150 -> 180 (Level 6: the lowest level whose picture size limit holds 5760 by 3840; Sony's 7680-wide profiles of the same bit-rate range carry it)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a4ca0",
+   "va": "0xffffffc0013a4ca0",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #521 (XAVC HS 4K (HEVC), 4:2:0 10-bit, 23.98p, quality class 34, key 102002): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a4ce0",
+   "va": "0xffffffc0013a4ce0",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #521 (XAVC HS 4K (HEVC), 4:2:0 10-bit, 23.98p, quality class 34, key 102002): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cb4ec",
+   "va": "0xffffffc0013cb4ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102002: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cb51c",
+   "va": "0xffffffc0013cb51c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 102002: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cb572",
+   "va": "0xffffffc0013cb572",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102002: raster +0x8a -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cb534",
+   "va": "0xffffffc0013cb534",
+   "old": "801600000e00020101010000",
+   "new": "c02100000e00020101018007",
+   "note": "profile key 102002: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3cb586",
+   "va": "0xffffffc0013cb586",
+   "old": "96",
+   "new": "b4",
+   "note": "profile key 102002: level 150 -> 180 (Level 6: the lowest level whose picture size limit holds 5760 by 3840; Sony's 7680-wide profiles of the same bit-rate range carry it)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a55a0",
+   "va": "0xffffffc0013a55a0",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #537 (XAVC HS 4K (HEVC), 4:2:2 10-bit, 23.98p, quality class 34, key 101705): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a55e0",
+   "va": "0xffffffc0013a55e0",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #537 (XAVC HS 4K (HEVC), 4:2:2 10-bit, 23.98p, quality class 34, key 101705): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cc4ec",
+   "va": "0xffffffc0013cc4ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 101705: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cc51c",
+   "va": "0xffffffc0013cc51c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 101705: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cc572",
+   "va": "0xffffffc0013cc572",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 101705: raster +0x8a -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cc534",
+   "va": "0xffffffc0013cc534",
+   "old": "801600000e00020101010000",
+   "new": "c02100000e00020101018007",
+   "note": "profile key 101705: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3cc586",
+   "va": "0xffffffc0013cc586",
+   "old": "96",
+   "new": "b4",
+   "note": "profile key 101705: level 150 -> 180 (Level 6: the lowest level whose picture size limit holds 5760 by 3840; Sony's 7680-wide profiles of the same bit-rate range carry it)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a6440",
+   "va": "0xffffffc0013a6440",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #563 (XAVC HS 4K (HEVC), 4:2:2 10-bit, 25p, quality class 32, key 101611): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3a6480",
+   "va": "0xffffffc0013a6480",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #563 (XAVC HS 4K (HEVC), 4:2:2 10-bit, 25p, quality class 32, key 101611): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cdeec",
+   "va": "0xffffffc0013cdeec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 101611: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cdf1c",
+   "va": "0xffffffc0013cdf1c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 101611: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cdf72",
+   "va": "0xffffffc0013cdf72",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 101611: raster +0x8a -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3cdf34",
+   "va": "0xffffffc0013cdf34",
+   "old": "801600000e00020101010000",
+   "new": "c02100000e00020101018007",
+   "note": "profile key 101611: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3cdf86",
+   "va": "0xffffffc0013cdf86",
+   "old": "96",
+   "new": "b4",
+   "note": "profile key 101611: level 150 -> 180 (Level 6: the lowest level whose picture size limit holds 5760 by 3840; Sony's 7680-wide profiles of the same bit-rate range carry it)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x392a60",
+   "va": "0xffffffc001392a60",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #5 (XAVC S 4K (AVC), 4:2:0 8-bit, 25p, quality class 26, key 3): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x392aa0",
+   "va": "0xffffffc001392aa0",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #5 (XAVC S 4K (AVC), 4:2:0 8-bit, 25p, quality class 26, key 3): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3aaeec",
+   "va": "0xffffffc0013aaeec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 3: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3aaf1c",
+   "va": "0xffffffc0013aaf1c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 3: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3aaf76",
+   "va": "0xffffffc0013aaf76",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 3: raster +0x8e -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3aaf34",
+   "va": "0xffffffc0013aaf34",
+   "old": "801600000e00010101010000",
+   "new": "c02100000e00010101018007",
+   "note": "profile key 3: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3aaf98",
+   "va": "0xffffffc0013aaf98",
+   "old": "0000000068201700",
+   "new": "02000000a2e11100",
+   "note": "profile key 3: bit rate +0xb0: 97.0 -> 300.0 million (shift and value 0, 1515624 -> 2, 1171874; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3aafa0",
+   "va": "0xffffffc0013aafa0",
+   "old": "07000000ae2f0000",
+   "new": "0900000086280000",
+   "note": "profile key 3: highest bit rate +0xb8: 100.0 -> 339.9 million (shift and value 7, 12206 -> 9, 10374; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3aafa8",
+   "va": "0xffffffc0013aafa8",
+   "old": "0500000074190300",
+   "new": "070000007e880200",
+   "note": "profile key 3: stream buffer +0xc0: 104.0 -> 340.0 million (shift and value 5, 203124 -> 7, 166014; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3aaf8f",
+   "va": "0xffffffc0013aaf8f",
+   "old": "33",
+   "new": "3d",
+   "note": "profile key 3: level 51 -> 61 (Level 6.1: Sony's 7680-wide AVC profiles carry it above the rates Level 6 allows)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x392af0",
+   "va": "0xffffffc001392af0",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #6 (XAVC S 4K (AVC), 4:2:0 8-bit, 23.98p, quality class 26, key 4): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x392b30",
+   "va": "0xffffffc001392b30",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #6 (XAVC S 4K (AVC), 4:2:0 8-bit, 23.98p, quality class 26, key 4): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3aafec",
+   "va": "0xffffffc0013aafec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 4: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ab01c",
+   "va": "0xffffffc0013ab01c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 4: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ab076",
+   "va": "0xffffffc0013ab076",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 4: raster +0x8e -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ab034",
+   "va": "0xffffffc0013ab034",
+   "old": "801600000e00010101010000",
+   "new": "c02100000e00010101018007",
+   "note": "profile key 4: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3ab098",
+   "va": "0xffffffc0013ab098",
+   "old": "0000000068201700",
+   "new": "02000000a2e11100",
+   "note": "profile key 4: bit rate +0xb0: 97.0 -> 300.0 million (shift and value 0, 1515624 -> 2, 1171874; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3ab0a0",
+   "va": "0xffffffc0013ab0a0",
+   "old": "07000000ae2f0000",
+   "new": "0900000086280000",
+   "note": "profile key 4: highest bit rate +0xb8: 100.0 -> 339.9 million (shift and value 7, 12206 -> 9, 10374; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3ab0a8",
+   "va": "0xffffffc0013ab0a8",
+   "old": "0500000074190300",
+   "new": "070000007e880200",
+   "note": "profile key 4: stream buffer +0xc0: 104.0 -> 340.0 million (shift and value 5, 203124 -> 7, 166014; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3ab08f",
+   "va": "0xffffffc0013ab08f",
+   "old": "33",
+   "new": "3d",
+   "note": "profile key 4: level 51 -> 61 (Level 6.1: Sony's 7680-wide AVC profiles carry it above the rates Level 6 allows)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x392c10",
+   "va": "0xffffffc001392c10",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #8 (XAVC S 4K (AVC), 4:2:0 8-bit, 25p, quality class 33, key 6): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x392c50",
+   "va": "0xffffffc001392c50",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #8 (XAVC S 4K (AVC), 4:2:0 8-bit, 25p, quality class 33, key 6): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ab1ec",
+   "va": "0xffffffc0013ab1ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 6: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ab21c",
+   "va": "0xffffffc0013ab21c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 6: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ab276",
+   "va": "0xffffffc0013ab276",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 6: raster +0x8e -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ab234",
+   "va": "0xffffffc0013ab234",
+   "old": "801600000e00010101010000",
+   "new": "c02100000e00010101018007",
+   "note": "profile key 6: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3ab28f",
+   "va": "0xffffffc0013ab28f",
+   "old": "33",
+   "new": "3c",
+   "note": "profile key 6: level 51 -> 60 (Level 6: the lowest level whose picture size limit holds 5760 by 3840; Sony's 7680-wide profiles of the same bit-rate range carry it)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x392ca0",
+   "va": "0xffffffc001392ca0",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #9 (XAVC S 4K (AVC), 4:2:0 8-bit, 23.98p, quality class 33, key 7): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x392ce0",
+   "va": "0xffffffc001392ce0",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #9 (XAVC S 4K (AVC), 4:2:0 8-bit, 23.98p, quality class 33, key 7): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ab2ec",
+   "va": "0xffffffc0013ab2ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 7: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ab31c",
+   "va": "0xffffffc0013ab31c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 7: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ab376",
+   "va": "0xffffffc0013ab376",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 7: raster +0x8e -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ab334",
+   "va": "0xffffffc0013ab334",
+   "old": "801600000e00010101010000",
+   "new": "c02100000e00010101018007",
+   "note": "profile key 7: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3ab38f",
+   "va": "0xffffffc0013ab38f",
+   "old": "33",
+   "new": "3c",
+   "note": "profile key 7: level 51 -> 60 (Level 6: the lowest level whose picture size limit holds 5760 by 3840; Sony's 7680-wide profiles of the same bit-rate range carry it)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x393e10",
+   "va": "0xffffffc001393e10",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #40 (XAVC S 4K (AVC), 4:2:2 10-bit, 25p, quality class 24, key 102501): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x393e50",
+   "va": "0xffffffc001393e50",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #40 (XAVC S 4K (AVC), 4:2:2 10-bit, 25p, quality class 24, key 102501): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ad1ec",
+   "va": "0xffffffc0013ad1ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102501: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ad21c",
+   "va": "0xffffffc0013ad21c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 102501: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ad276",
+   "va": "0xffffffc0013ad276",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102501: raster +0x8e -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ad234",
+   "va": "0xffffffc0013ad234",
+   "old": "801600000e00010101010000",
+   "new": "c02100000e00010101018007",
+   "note": "profile key 102501: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3ad298",
+   "va": "0xffffffc0013ad298",
+   "old": "080000005f210000",
+   "new": "02000000a2e11100",
+   "note": "profile key 102501: bit rate +0xb0: 140.0 -> 300.0 million (shift and value 8, 8543 -> 2, 1171874; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3ad2a0",
+   "va": "0xffffffc0013ad2a0",
+   "old": "080000005f210000",
+   "new": "0900000086280000",
+   "note": "profile key 102501: highest bit rate +0xb8: 140.0 -> 339.9 million (shift and value 8, 8543 -> 9, 10374; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3ad2a8",
+   "va": "0xffffffc0013ad2a8",
+   "old": "06000000ff150200",
+   "new": "070000007e880200",
+   "note": "profile key 102501: stream buffer +0xc0: 140.0 -> 340.0 million (shift and value 6, 136703 -> 7, 166014; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3ad28f",
+   "va": "0xffffffc0013ad28f",
+   "old": "33",
+   "new": "3d",
+   "note": "profile key 102501: level 51 -> 61 (Level 6.1: Sony's 7680-wide AVC profiles carry it above the rates Level 6 allows)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x393ea0",
+   "va": "0xffffffc001393ea0",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #41 (XAVC S 4K (AVC), 4:2:2 10-bit, 23.98p, quality class 24, key 102600): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x393ee0",
+   "va": "0xffffffc001393ee0",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #41 (XAVC S 4K (AVC), 4:2:2 10-bit, 23.98p, quality class 24, key 102600): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ad2ec",
+   "va": "0xffffffc0013ad2ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102600: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ad31c",
+   "va": "0xffffffc0013ad31c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 102600: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ad376",
+   "va": "0xffffffc0013ad376",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102600: raster +0x8e -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ad334",
+   "va": "0xffffffc0013ad334",
+   "old": "801600000e00010101010000",
+   "new": "c02100000e00010101018007",
+   "note": "profile key 102600: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3ad398",
+   "va": "0xffffffc0013ad398",
+   "old": "080000005f210000",
+   "new": "02000000a2e11100",
+   "note": "profile key 102600: bit rate +0xb0: 140.0 -> 300.0 million (shift and value 8, 8543 -> 2, 1171874; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3ad3a0",
+   "va": "0xffffffc0013ad3a0",
+   "old": "080000005f210000",
+   "new": "0900000086280000",
+   "note": "profile key 102600: highest bit rate +0xb8: 140.0 -> 339.9 million (shift and value 8, 8543 -> 9, 10374; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3ad3a8",
+   "va": "0xffffffc0013ad3a8",
+   "old": "06000000ff150200",
+   "new": "070000007e880200",
+   "note": "profile key 102600: stream buffer +0xc0: 140.0 -> 340.0 million (shift and value 6, 136703 -> 7, 166014; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3ad38f",
+   "va": "0xffffffc0013ad38f",
+   "old": "33",
+   "new": "3d",
+   "note": "profile key 102600: level 51 -> 61 (Level 6.1: Sony's 7680-wide AVC profiles carry it above the rates Level 6 allows)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x393fc0",
+   "va": "0xffffffc001393fc0",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #43 (XAVC S 4K (AVC), 4:2:2 10-bit, 25p, quality class 34, key 102503): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x394000",
+   "va": "0xffffffc001394000",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #43 (XAVC S 4K (AVC), 4:2:2 10-bit, 25p, quality class 34, key 102503): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ad4ec",
+   "va": "0xffffffc0013ad4ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102503: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ad51c",
+   "va": "0xffffffc0013ad51c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 102503: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ad576",
+   "va": "0xffffffc0013ad576",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102503: raster +0x8e -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ad534",
+   "va": "0xffffffc0013ad534",
+   "old": "801600000e00010101010000",
+   "new": "c02100000e00010101018007",
+   "note": "profile key 102503: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3ad58f",
+   "va": "0xffffffc0013ad58f",
+   "old": "33",
+   "new": "3c",
+   "note": "profile key 102503: level 51 -> 60 (Level 6: the lowest level whose picture size limit holds 5760 by 3840; Sony's 7680-wide profiles of the same bit-rate range carry it)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x394050",
+   "va": "0xffffffc001394050",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #44 (XAVC S 4K (AVC), 4:2:2 10-bit, 23.98p, quality class 34, key 102601): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x394090",
+   "va": "0xffffffc001394090",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #44 (XAVC S 4K (AVC), 4:2:2 10-bit, 23.98p, quality class 34, key 102601): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ad5ec",
+   "va": "0xffffffc0013ad5ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102601: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ad61c",
+   "va": "0xffffffc0013ad61c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 102601: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ad676",
+   "va": "0xffffffc0013ad676",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102601: raster +0x8e -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ad634",
+   "va": "0xffffffc0013ad634",
+   "old": "801600000e00010101010000",
+   "new": "c02100000e00010101018007",
+   "note": "profile key 102601: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3ad68f",
+   "va": "0xffffffc0013ad68f",
+   "old": "33",
+   "new": "3c",
+   "note": "profile key 102601: level 51 -> 60 (Level 6: the lowest level whose picture size limit holds 5760 by 3840; Sony's 7680-wide profiles of the same bit-rate range carry it)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x394830",
+   "va": "0xffffffc001394830",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #58 (XAVC S 4K (AVC), 4:2:0 8-bit, 25p, quality class 34, key 102909): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x394870",
+   "va": "0xffffffc001394870",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #58 (XAVC S 4K (AVC), 4:2:0 8-bit, 25p, quality class 34, key 102909): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ae3ec",
+   "va": "0xffffffc0013ae3ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102909: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ae41c",
+   "va": "0xffffffc0013ae41c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 102909: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ae476",
+   "va": "0xffffffc0013ae476",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102909: raster +0x8e -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ae434",
+   "va": "0xffffffc0013ae434",
+   "old": "801600000e00010101010000",
+   "new": "c02100000e00010101018007",
+   "note": "profile key 102909: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3ae48f",
+   "va": "0xffffffc0013ae48f",
+   "old": "33",
+   "new": "3c",
+   "note": "profile key 102909: level 51 -> 60 (Level 6: the lowest level whose picture size limit holds 5760 by 3840; Sony's 7680-wide profiles of the same bit-rate range carry it)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3948c0",
+   "va": "0xffffffc0013948c0",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #59 (XAVC S 4K (AVC), 4:2:0 8-bit, 23.98p, quality class 34, key 103004): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x394900",
+   "va": "0xffffffc001394900",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #59 (XAVC S 4K (AVC), 4:2:0 8-bit, 23.98p, quality class 34, key 103004): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ae4ec",
+   "va": "0xffffffc0013ae4ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 103004: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ae51c",
+   "va": "0xffffffc0013ae51c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 103004: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ae576",
+   "va": "0xffffffc0013ae576",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 103004: raster +0x8e -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ae534",
+   "va": "0xffffffc0013ae534",
+   "old": "801600000e00010101010000",
+   "new": "c02100000e00010101018007",
+   "note": "profile key 103004: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3ae58f",
+   "va": "0xffffffc0013ae58f",
+   "old": "33",
+   "new": "3c",
+   "note": "profile key 103004: level 51 -> 60 (Level 6: the lowest level whose picture size limit holds 5760 by 3840; Sony's 7680-wide profiles of the same bit-rate range carry it)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3949e0",
+   "va": "0xffffffc0013949e0",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #61 (XAVC S 4K (AVC), 4:2:0 8-bit, 25p, quality class 4, key 102911): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x394a20",
+   "va": "0xffffffc001394a20",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #61 (XAVC S 4K (AVC), 4:2:0 8-bit, 25p, quality class 4, key 102911): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ae6ec",
+   "va": "0xffffffc0013ae6ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102911: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ae71c",
+   "va": "0xffffffc0013ae71c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 102911: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ae776",
+   "va": "0xffffffc0013ae776",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102911: raster +0x8e -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ae734",
+   "va": "0xffffffc0013ae734",
+   "old": "801600000e00010101010000",
+   "new": "c02100000e00010101018007",
+   "note": "profile key 102911: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3ae78f",
+   "va": "0xffffffc0013ae78f",
+   "old": "33",
+   "new": "3c",
+   "note": "profile key 102911: level 51 -> 60 (Level 6: the lowest level whose picture size limit holds 5760 by 3840; Sony's 7680-wide profiles of the same bit-rate range carry it)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x394a70",
+   "va": "0xffffffc001394a70",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #62 (XAVC S 4K (AVC), 4:2:0 8-bit, 23.98p, quality class 4, key 103005): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x394ab0",
+   "va": "0xffffffc001394ab0",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #62 (XAVC S 4K (AVC), 4:2:0 8-bit, 23.98p, quality class 4, key 103005): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ae7ec",
+   "va": "0xffffffc0013ae7ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 103005: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ae81c",
+   "va": "0xffffffc0013ae81c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 103005: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ae876",
+   "va": "0xffffffc0013ae876",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 103005: raster +0x8e -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3ae834",
+   "va": "0xffffffc0013ae834",
+   "old": "801600000e00010101010000",
+   "new": "c02100000e00010101018007",
+   "note": "profile key 103005: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3ae88f",
+   "va": "0xffffffc0013ae88f",
+   "old": "33",
+   "new": "3c",
+   "note": "profile key 103005: level 51 -> 60 (Level 6: the lowest level whose picture size limit holds 5760 by 3840; Sony's 7680-wide profiles of the same bit-rate range carry it)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3951c0",
+   "va": "0xffffffc0013951c0",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #75 (XAVC S 4K (AVC), 4:2:2 10-bit, 25p, quality class 21, key 102409): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x395200",
+   "va": "0xffffffc001395200",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #75 (XAVC S 4K (AVC), 4:2:2 10-bit, 25p, quality class 21, key 102409): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3af4ec",
+   "va": "0xffffffc0013af4ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102409: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3af51c",
+   "va": "0xffffffc0013af51c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 102409: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3af576",
+   "va": "0xffffffc0013af576",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102409: raster +0x8e -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3af534",
+   "va": "0xffffffc0013af534",
+   "old": "801600000e00010101010000",
+   "new": "c02100000e00010101018007",
+   "note": "profile key 102409: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3af598",
+   "va": "0xffffffc0013af598",
+   "old": "08000000ae2f0000",
+   "new": "02000000a2e11100",
+   "note": "profile key 102409: bit rate +0xb0: 200.0 -> 300.0 million (shift and value 8, 12206 -> 2, 1171874; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3af5a0",
+   "va": "0xffffffc0013af5a0",
+   "old": "08000000ae2f0000",
+   "new": "0900000086280000",
+   "note": "profile key 102409: highest bit rate +0xb8: 200.0 -> 339.9 million (shift and value 8, 12206 -> 9, 10374; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3af5a8",
+   "va": "0xffffffc0013af5a8",
+   "old": "06000000effa0200",
+   "new": "070000007e880200",
+   "note": "profile key 102409: stream buffer +0xc0: 200.0 -> 340.0 million (shift and value 6, 195311 -> 7, 166014; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3af58f",
+   "va": "0xffffffc0013af58f",
+   "old": "33",
+   "new": "3d",
+   "note": "profile key 102409: level 51 -> 61 (Level 6.1: Sony's 7680-wide AVC profiles carry it above the rates Level 6 allows)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x395250",
+   "va": "0xffffffc001395250",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #76 (XAVC S 4K (AVC), 4:2:2 10-bit, 23.98p, quality class 21, key 102410): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x395290",
+   "va": "0xffffffc001395290",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #76 (XAVC S 4K (AVC), 4:2:2 10-bit, 23.98p, quality class 21, key 102410): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3af5ec",
+   "va": "0xffffffc0013af5ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102410: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3af61c",
+   "va": "0xffffffc0013af61c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 102410: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3af676",
+   "va": "0xffffffc0013af676",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102410: raster +0x8e -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3af634",
+   "va": "0xffffffc0013af634",
+   "old": "801600000e00010101010000",
+   "new": "c02100000e00010101018007",
+   "note": "profile key 102410: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3af698",
+   "va": "0xffffffc0013af698",
+   "old": "08000000ae2f0000",
+   "new": "02000000a2e11100",
+   "note": "profile key 102410: bit rate +0xb0: 200.0 -> 300.0 million (shift and value 8, 12206 -> 2, 1171874; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3af6a0",
+   "va": "0xffffffc0013af6a0",
+   "old": "08000000ae2f0000",
+   "new": "0900000086280000",
+   "note": "profile key 102410: highest bit rate +0xb8: 200.0 -> 339.9 million (shift and value 8, 12206 -> 9, 10374; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3af6a8",
+   "va": "0xffffffc0013af6a8",
+   "old": "06000000effa0200",
+   "new": "070000007e880200",
+   "note": "profile key 102410: stream buffer +0xc0: 200.0 -> 340.0 million (shift and value 6, 195311 -> 7, 166014; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3af68f",
+   "va": "0xffffffc0013af68f",
+   "old": "33",
+   "new": "3d",
+   "note": "profile key 102410: level 51 -> 61 (Level 6.1: Sony's 7680-wide AVC profiles carry it above the rates Level 6 allows)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x395370",
+   "va": "0xffffffc001395370",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #78 (XAVC S 4K (AVC), 4:2:2 10-bit, 25p, quality class 39, key 102603): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3953b0",
+   "va": "0xffffffc0013953b0",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #78 (XAVC S 4K (AVC), 4:2:2 10-bit, 25p, quality class 39, key 102603): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3af7ec",
+   "va": "0xffffffc0013af7ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102603: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3af81c",
+   "va": "0xffffffc0013af81c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 102603: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3af876",
+   "va": "0xffffffc0013af876",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102603: raster +0x8e -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3af834",
+   "va": "0xffffffc0013af834",
+   "old": "801600000e00010101010000",
+   "new": "c02100000e00010101018007",
+   "note": "profile key 102603: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3af88f",
+   "va": "0xffffffc0013af88f",
+   "old": "33",
+   "new": "3c",
+   "note": "profile key 102603: level 51 -> 60 (Level 6: the lowest level whose picture size limit holds 5760 by 3840; Sony's 7680-wide profiles of the same bit-rate range carry it)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x395400",
+   "va": "0xffffffc001395400",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #79 (XAVC S 4K (AVC), 4:2:2 10-bit, 23.98p, quality class 39, key 102604): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x395440",
+   "va": "0xffffffc001395440",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #79 (XAVC S 4K (AVC), 4:2:2 10-bit, 23.98p, quality class 39, key 102604): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3af8ec",
+   "va": "0xffffffc0013af8ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102604: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3af91c",
+   "va": "0xffffffc0013af91c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 102604: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3af976",
+   "va": "0xffffffc0013af976",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102604: raster +0x8e -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3af934",
+   "va": "0xffffffc0013af934",
+   "old": "801600000e00010101010000",
+   "new": "c02100000e00010101018007",
+   "note": "profile key 102604: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3af98f",
+   "va": "0xffffffc0013af98f",
+   "old": "33",
+   "new": "3c",
+   "note": "profile key 102604: level 51 -> 60 (Level 6: the lowest level whose picture size limit holds 5760 by 3840; Sony's 7680-wide profiles of the same bit-rate range carry it)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x3976e0",
+   "va": "0xffffffc0013976e0",
+   "old": "0000000001000000",
+   "new": "0200000006000000",
+   "note": "descriptor #141 (XAVC S 4K (AVC), 4:2:2 10-bit, 23.98p, quality class 26, key 102607): +0x38, +0x3c: 0, 1 -> 2, 6 (as every two-core descriptor of this file)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A1-desc",
+   "file_off": "0x397720",
+   "va": "0xffffffc001397720",
+   "old": "000001000000000f7008",
+   "new": "0200010000008016000f",
+   "note": "descriptor #141 (XAVC S 4K (AVC), 4:2:2 10-bit, 23.98p, quality class 26, key 102607): UseCore +0x78: 0 -> 2; raster +0x7e: 3840x2160 -> 5760x3840 (the five bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3b36ec",
+   "va": "0xffffffc0013b36ec",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102607: raster +0x04 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3b371c",
+   "va": "0xffffffc0013b371c",
+   "old": "000f000070080000",
+   "new": "80160000000f0000",
+   "note": "profile key 102607: raster +0x34 -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3b3776",
+   "va": "0xffffffc0013b3776",
+   "old": "000f7008",
+   "new": "8016000f",
+   "note": "profile key 102607: raster +0x8e -> 5760x3840",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-profile",
+   "file_off": "0x3b3734",
+   "va": "0xffffffc0013b3734",
+   "old": "801600000e00010101010000",
+   "new": "c02100000e00010101018007",
+   "note": "profile key 102607: +0x4c: 5760 -> 8640 (1.5 x the width, as in Sony's profiles); rows for the first core +0x56: 0 -> 1920 (half the picture; the eight bytes between are written as they are)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3b3798",
+   "va": "0xffffffc0013b3798",
+   "old": "0000000068201700",
+   "new": "02000000a2e11100",
+   "note": "profile key 102607: bit rate +0xb0: 97.0 -> 300.0 million (shift and value 0, 1515624 -> 2, 1171874; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3b37a0",
+   "va": "0xffffffc0013b37a0",
+   "old": "07000000ae2f0000",
+   "new": "0900000086280000",
+   "note": "profile key 102607: highest bit rate +0xb8: 100.0 -> 339.9 million (shift and value 7, 12206 -> 9, 10374; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-rate",
+   "file_off": "0x3b37a8",
+   "va": "0xffffffc0013b37a8",
+   "old": "05000000effa0200",
+   "new": "070000007e880200",
+   "note": "profile key 102607: stream buffer +0xc0: 100.0 -> 340.0 million (shift and value 5, 195311 -> 7, 166014; the figures of Sony's own 5760x3240 profiles)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A2-level",
+   "file_off": "0x3b378f",
+   "va": "0xffffffc0013b378f",
+   "old": "33",
+   "new": "3d",
+   "note": "profile key 102607: level 51 -> 61 (Level 6.1: Sony's 7680-wide AVC profiles carry it above the rates Level 6 allows)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x3a0c3d",
+   "va": "0xffffffc0013a0c3d",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #406 (XAVC HS 4K (HEVC), 4:2:2 10-bit, 23.98p, quality class 26, key 101702): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3c427f",
+   "va": "0xffffffc0013c427f",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 101702: MParam 0x97: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 24/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x3a0ccd",
+   "va": "0xffffffc0013a0ccd",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #407 (XAVC HS 4K (HEVC), 4:2:0 10-bit, 25p, quality class 26, key 101901): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3c437f",
+   "va": "0xffffffc0013c437f",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 101901: MParam 0x97: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 24/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x3a0d5d",
+   "va": "0xffffffc0013a0d5d",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #408 (XAVC HS 4K (HEVC), 4:2:0 10-bit, 23.98p, quality class 26, key 102000): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3c447f",
+   "va": "0xffffffc0013c447f",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 102000: MParam 0x97: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 24/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x3a189d",
+   "va": "0xffffffc0013a189d",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #428 (XAVC HS 4K (HEVC), 4:2:2 10-bit, 25p, quality class 24, key 101609): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3c587f",
+   "va": "0xffffffc0013c587f",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 101609: MParam 0x97: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 24/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x3a35dd",
+   "va": "0xffffffc0013a35dd",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #480 (XAVC HS 4K (HEVC), 4:2:2 10-bit, 25p, quality class 36, key 101607): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3c8c7f",
+   "va": "0xffffffc0013c8c7f",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 101607: MParam 0x97: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 24/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x3a366d",
+   "va": "0xffffffc0013a366d",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #481 (XAVC HS 4K (HEVC), 4:2:2 10-bit, 23.98p, quality class 36, key 101703): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3c8d7f",
+   "va": "0xffffffc0013c8d7f",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 101703: MParam 0x97: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 24/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x3a474d",
+   "va": "0xffffffc0013a474d",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #511 (XAVC HS 4K (HEVC), 4:2:0 10-bit, 25p, quality class 41, key 101907): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3cab7f",
+   "va": "0xffffffc0013cab7f",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 101907: MParam 0x97: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 24/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x3a47dd",
+   "va": "0xffffffc0013a47dd",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #512 (XAVC HS 4K (HEVC), 4:2:0 10-bit, 23.98p, quality class 41, key 102003): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3cac7f",
+   "va": "0xffffffc0013cac7f",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 102003: MParam 0x97: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 24/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x3a4c5d",
+   "va": "0xffffffc0013a4c5d",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #520 (XAVC HS 4K (HEVC), 4:2:0 10-bit, 25p, quality class 34, key 101905): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3cb47f",
+   "va": "0xffffffc0013cb47f",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 101905: MParam 0x97: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 24/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x3a4ced",
+   "va": "0xffffffc0013a4ced",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #521 (XAVC HS 4K (HEVC), 4:2:0 10-bit, 23.98p, quality class 34, key 102002): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3cb57f",
+   "va": "0xffffffc0013cb57f",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 102002: MParam 0x97: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 24/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x3a55ed",
+   "va": "0xffffffc0013a55ed",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #537 (XAVC HS 4K (HEVC), 4:2:2 10-bit, 23.98p, quality class 34, key 101705): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3cc57f",
+   "va": "0xffffffc0013cc57f",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 101705: MParam 0x97: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 24/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x3a648d",
+   "va": "0xffffffc0013a648d",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #563 (XAVC HS 4K (HEVC), 4:2:2 10-bit, 25p, quality class 32, key 101611): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3cdf7f",
+   "va": "0xffffffc0013cdf7f",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 101611: MParam 0x97: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 24/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x392aad",
+   "va": "0xffffffc001392aad",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #5 (XAVC S 4K (AVC), 4:2:0 8-bit, 25p, quality class 26, key 3): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3aaf83",
+   "va": "0xffffffc0013aaf83",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 3: MParam 0x9b: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 12/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x392b3d",
+   "va": "0xffffffc001392b3d",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #6 (XAVC S 4K (AVC), 4:2:0 8-bit, 23.98p, quality class 26, key 4): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3ab083",
+   "va": "0xffffffc0013ab083",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 4: MParam 0x9b: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 12/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x392c5d",
+   "va": "0xffffffc001392c5d",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #8 (XAVC S 4K (AVC), 4:2:0 8-bit, 25p, quality class 33, key 6): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3ab283",
+   "va": "0xffffffc0013ab283",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 6: MParam 0x9b: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 12/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x392ced",
+   "va": "0xffffffc001392ced",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #9 (XAVC S 4K (AVC), 4:2:0 8-bit, 23.98p, quality class 33, key 7): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3ab383",
+   "va": "0xffffffc0013ab383",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 7: MParam 0x9b: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 12/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x393e5d",
+   "va": "0xffffffc001393e5d",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #40 (XAVC S 4K (AVC), 4:2:2 10-bit, 25p, quality class 24, key 102501): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3ad283",
+   "va": "0xffffffc0013ad283",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 102501: MParam 0x9b: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 12/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x393eed",
+   "va": "0xffffffc001393eed",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #41 (XAVC S 4K (AVC), 4:2:2 10-bit, 23.98p, quality class 24, key 102600): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3ad383",
+   "va": "0xffffffc0013ad383",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 102600: MParam 0x9b: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 12/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x39400d",
+   "va": "0xffffffc00139400d",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #43 (XAVC S 4K (AVC), 4:2:2 10-bit, 25p, quality class 34, key 102503): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3ad583",
+   "va": "0xffffffc0013ad583",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 102503: MParam 0x9b: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 12/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x39409d",
+   "va": "0xffffffc00139409d",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #44 (XAVC S 4K (AVC), 4:2:2 10-bit, 23.98p, quality class 34, key 102601): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3ad683",
+   "va": "0xffffffc0013ad683",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 102601: MParam 0x9b: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 12/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x39487d",
+   "va": "0xffffffc00139487d",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #58 (XAVC S 4K (AVC), 4:2:0 8-bit, 25p, quality class 34, key 102909): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3ae483",
+   "va": "0xffffffc0013ae483",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 102909: MParam 0x9b: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 12/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x39490d",
+   "va": "0xffffffc00139490d",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #59 (XAVC S 4K (AVC), 4:2:0 8-bit, 23.98p, quality class 34, key 103004): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3ae583",
+   "va": "0xffffffc0013ae583",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 103004: MParam 0x9b: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 12/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x394a2d",
+   "va": "0xffffffc001394a2d",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #61 (XAVC S 4K (AVC), 4:2:0 8-bit, 25p, quality class 4, key 102911): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3ae783",
+   "va": "0xffffffc0013ae783",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 102911: MParam 0x9b: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 12/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x394abd",
+   "va": "0xffffffc001394abd",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #62 (XAVC S 4K (AVC), 4:2:0 8-bit, 23.98p, quality class 4, key 103005): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3ae883",
+   "va": "0xffffffc0013ae883",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 103005: MParam 0x9b: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 12/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x39520d",
+   "va": "0xffffffc00139520d",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #75 (XAVC S 4K (AVC), 4:2:2 10-bit, 25p, quality class 21, key 102409): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3af583",
+   "va": "0xffffffc0013af583",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 102409: MParam 0x9b: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 12/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x39529d",
+   "va": "0xffffffc00139529d",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #76 (XAVC S 4K (AVC), 4:2:2 10-bit, 23.98p, quality class 21, key 102410): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3af683",
+   "va": "0xffffffc0013af683",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 102410: MParam 0x9b: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 12/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x3953bd",
+   "va": "0xffffffc0013953bd",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #78 (XAVC S 4K (AVC), 4:2:2 10-bit, 25p, quality class 39, key 102603): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3af883",
+   "va": "0xffffffc0013af883",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 102603: MParam 0x9b: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 12/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x39544d",
+   "va": "0xffffffc00139544d",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #79 (XAVC S 4K (AVC), 4:2:2 10-bit, 23.98p, quality class 39, key 102604): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3af983",
+   "va": "0xffffffc0013af983",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 102604: MParam 0x9b: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 12/24)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-pred",
+   "file_off": "0x39772d",
+   "va": "0xffffffc00139772d",
+   "old": "03",
+   "new": "01",
+   "note": "descriptor #141 (XAVC S 4K (AVC), 4:2:2 10-bit, 23.98p, quality class 26, key 102607): PredMode +0x85: 3 -> 1 (sent at channel creation)",
+   "code": false
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A4-mparam",
+   "file_off": "0x3b3783",
+   "va": "0xffffffc0013b3783",
+   "old": "03",
+   "new": "01",
+   "note": "profile key 102607: MParam 0x9b: 3 -> 1 (EncConfig +0x18: I and P pictures only, no picture reordering; NParam/NdParam stay 12/24)",
+   "code": false
+  },
+  {
+   "binary": "libmpr.so",
+   "kind": "L3-elst",
+   "file_off": "0x11d5e4",
+   "va": "0x11d5e4",
+   "old": "2090801a",
+   "new": "00008052",
+   "note": "writer set-up 0x11f030 (a normal recording): the video edit list's start in frames, MP4 request +0x10 (0x222b18 -> libXavcMp4 +0x50 -> 0x226818: media_time = frame duration x it). HEVC branch: `csel w0, w1, w0, ls` (2 frames at 50p and up, else 1) -> `mov w0, #0`. AVC (0x11fe60: 1 frame), intra formats and the [x21+4] path unchanged. With M = 1 an HEVC stream has no composition offsets, so a one-frame start hides its first picture (F981, F986)",
+   "code": true
+  },
+  {
+   "binary": "av-cam.bin",
+   "kind": "A3-clip",
+   "file_off": "0x390630",
+   "va": "0xffffffc001390630",
+   "old": "00200000e010000003000000",
+   "new": "80160000000f000017000000",
+   "note": "clip-format row 1 (8192x4320, code 3; unused on this camera) -> 5760x3840, code 23, the code row 5 gives a 3840x2160 recording. Row 5 is left as it is",
+   "code": false
+  },
+  {
+   "binary": "libmpr.so",
+   "kind": "L4-mp4size",
+   "file_off": "0x21ff68",
+   "va": "0x21ff68",
+   "old": "060e8152",
+   "new": "06e08152",
+   "note": "MP4 track height, XAVC S 4K (AVC): 2160 -> 3840 (`mov w6, #0x870` -> `mov`)",
+   "code": true
+  },
+  {
+   "binary": "libmpr.so",
+   "kind": "L4-mp4size",
+   "file_off": "0x21ff6c",
+   "va": "0x21ff6c",
+   "old": "07e08152",
+   "new": "07d08252",
+   "note": "MP4 track width, XAVC S 4K (AVC): 3840 -> 5760 (`mov w7, #0xf00` -> `mov`)",
+   "code": true
+  },
+  {
+   "binary": "libmpr.so",
+   "kind": "L4-mp4size",
+   "file_off": "0x2200a0",
+   "va": "0x2200a0",
+   "old": "060e8152",
+   "new": "06e08152",
+   "note": "MP4 track height, XAVC HS 4K (HEVC): 2160 -> 3840 (`mov w6, #0x870` -> `mov`)",
+   "code": true
+  },
+  {
+   "binary": "libmpr.so",
+   "kind": "L4-mp4size",
+   "file_off": "0x2200a4",
+   "va": "0x2200a4",
+   "old": "07e08152",
+   "new": "07d08252",
+   "note": "MP4 track width, XAVC HS 4K (HEVC): 3840 -> 5760 (`mov w7, #0xf00` -> `mov`)",
+   "code": true
+  },
+  {
+   "binary": "libmpr.so",
+   "kind": "L4-mp4size",
+   "file_off": "0x221538",
+   "va": "0x221538",
+   "old": "01c08352",
+   "new": "01d08252",
+   "note": "stsd entry set-up 0x221490: its 7680 compare -> 5760, so a 5760-wide entry is built (else it returns 2) (`mov w1, #0x1e00` -> `mov`)",
+   "code": true
+  },
+  {
+   "binary": "libmpr.so",
+   "kind": "L4-mp4size",
+   "file_off": "0x222aec",
+   "va": "0x222aec",
+   "old": "23544079",
+   "new": "03e08152",
+   "note": "PROF profile id 0x222ac0, AVC: width read -> the constant 3840 (the UHD ids) (`ldrh w3, [x1, #0x2a]` -> `mov`)",
+   "code": true
+  },
+  {
+   "binary": "libmpr.so",
+   "kind": "L4-mp4size",
+   "file_off": "0x222f28",
+   "va": "0x222f28",
+   "old": "20544079",
+   "new": "00e08152",
+   "note": "PROF profile id 0x222ac0, HEVC chroma code 2: width read -> the constant 3840 (`ldrh w0, [x1, #0x2a]` -> `mov`)",
+   "code": true
+  },
+  {
+   "binary": "libmpr.so",
+   "kind": "L4-mp4size",
+   "file_off": "0x222f74",
+   "va": "0x222f74",
+   "old": "20544079",
+   "new": "00e08152",
+   "note": "PROF profile id 0x222ac0, HEVC chroma code 1: width read -> the constant 3840 (`ldrh w0, [x1, #0x2a]` -> `mov`)",
+   "code": true
+  },
+  {
+   "binary": "libmpr.so",
+   "kind": "L4-mp4size",
+   "file_off": "0x22310c",
+   "va": "0x22310c",
+   "old": "00c08352",
+   "new": "00d08252",
+   "note": "PROF pixel aspect 0x2230b4: its 7680 compare -> 5760 (1:1), else it returns 3 (`mov w0, #0x1e00` -> `mov`)",
+   "code": true
+  }
+ ],
+ "optional_sites": [],
+ "bit_rate_300": {
+  "what": "three fields of each profile at 97 million or above: bit rate, highest bit rate, stream buffer (bits). Named by their values; the code that reads them was not traced field by field",
+  "profiles": [
+   {
+    "profile_key": 101702,
+    "family": "hs",
+    "format": "4:2:2 10-bit",
+    "rate": "23.98p",
+    "quality_class": 26,
+    "stock_millions": [
+     97.0,
+     100.0,
+     100.0
+    ],
+    "design_millions": [
+     300.0,
+     339.9,
+     340.0
+    ],
+    "figures_from": "Sony's 5760x3240 profiles, descriptors [464, 465, 466, 467, 468, 469, 470, 471, 472]"
+   },
+   {
+    "profile_key": 101901,
+    "family": "hs",
+    "format": "4:2:0 10-bit",
+    "rate": "25p",
+    "quality_class": 26,
+    "stock_millions": [
+     97.0,
+     100.0,
+     100.0
+    ],
+    "design_millions": [
+     300.0,
+     339.9,
+     340.0
+    ],
+    "figures_from": "Sony's 5760x3240 profiles, descriptors [464, 465, 466, 467, 468, 469, 470, 471, 472]"
+   },
+   {
+    "profile_key": 102000,
+    "family": "hs",
+    "format": "4:2:0 10-bit",
+    "rate": "23.98p",
+    "quality_class": 26,
+    "stock_millions": [
+     97.0,
+     100.0,
+     100.0
+    ],
+    "design_millions": [
+     300.0,
+     339.9,
+     340.0
+    ],
+    "figures_from": "Sony's 5760x3240 profiles, descriptors [464, 465, 466, 467, 468, 469, 470, 471, 472]"
+   },
+   {
+    "profile_key": 101609,
+    "family": "hs",
+    "format": "4:2:2 10-bit",
+    "rate": "25p",
+    "quality_class": 24,
+    "stock_millions": [
+     140.0,
+     140.0,
+     140.0
+    ],
+    "design_millions": [
+     300.0,
+     339.9,
+     340.0
+    ],
+    "figures_from": "Sony's 5760x3240 profiles, descriptors [464, 465, 466, 467, 468, 469, 470, 471, 472]"
+   },
+   {
+    "profile_key": 3,
+    "family": "s",
+    "format": "4:2:0 8-bit",
+    "rate": "25p",
+    "quality_class": 26,
+    "stock_millions": [
+     97.0,
+     100.0,
+     104.0
+    ],
+    "design_millions": [
+     300.0,
+     339.9,
+     340.0
+    ],
+    "figures_from": "the HEVC figures, in the AVC profile's own fields (no AVC profile has them)"
+   },
+   {
+    "profile_key": 4,
+    "family": "s",
+    "format": "4:2:0 8-bit",
+    "rate": "23.98p",
+    "quality_class": 26,
+    "stock_millions": [
+     97.0,
+     100.0,
+     104.0
+    ],
+    "design_millions": [
+     300.0,
+     339.9,
+     340.0
+    ],
+    "figures_from": "the HEVC figures, in the AVC profile's own fields (no AVC profile has them)"
+   },
+   {
+    "profile_key": 102501,
+    "family": "s",
+    "format": "4:2:2 10-bit",
+    "rate": "25p",
+    "quality_class": 24,
+    "stock_millions": [
+     140.0,
+     140.0,
+     140.0
+    ],
+    "design_millions": [
+     300.0,
+     339.9,
+     340.0
+    ],
+    "figures_from": "the HEVC figures, in the AVC profile's own fields (no AVC profile has them)"
+   },
+   {
+    "profile_key": 102600,
+    "family": "s",
+    "format": "4:2:2 10-bit",
+    "rate": "23.98p",
+    "quality_class": 24,
+    "stock_millions": [
+     140.0,
+     140.0,
+     140.0
+    ],
+    "design_millions": [
+     300.0,
+     339.9,
+     340.0
+    ],
+    "figures_from": "the HEVC figures, in the AVC profile's own fields (no AVC profile has them)"
+   },
+   {
+    "profile_key": 102409,
+    "family": "s",
+    "format": "4:2:2 10-bit",
+    "rate": "25p",
+    "quality_class": 21,
+    "stock_millions": [
+     200.0,
+     200.0,
+     200.0
+    ],
+    "design_millions": [
+     300.0,
+     339.9,
+     340.0
+    ],
+    "figures_from": "the HEVC figures, in the AVC profile's own fields (no AVC profile has them)"
+   },
+   {
+    "profile_key": 102410,
+    "family": "s",
+    "format": "4:2:2 10-bit",
+    "rate": "23.98p",
+    "quality_class": 21,
+    "stock_millions": [
+     200.0,
+     200.0,
+     200.0
+    ],
+    "design_millions": [
+     300.0,
+     339.9,
+     340.0
+    ],
+    "figures_from": "the HEVC figures, in the AVC profile's own fields (no AVC profile has them)"
+   },
+   {
+    "profile_key": 102607,
+    "family": "s",
+    "format": "4:2:2 10-bit",
+    "rate": "23.98p",
+    "quality_class": 26,
+    "stock_millions": [
+     97.0,
+     100.0,
+     100.0
+    ],
+    "design_millions": [
+     300.0,
+     339.9,
+     340.0
+    ],
+    "figures_from": "the HEVC figures, in the AVC profile's own fields (no AVC profile has them)"
+   }
+  ]
+ },
+ "prediction_m1": {
+  "what": "every descriptor of the design: PredMode +0x85 and the profile's MParam (HEVC +0x97, AVC +0x9b) 3 -> 1; libmpr.so 0x11f4e0 (writer set-up of a normal recording, HEVC branch): the video edit list's start 1 frame -> 0",
+  "sites": [
+   {
+    "descriptor": 406,
+    "family": "hs",
+    "format": "4:2:2 10-bit",
+    "rate": "23.98p",
+    "quality_class": 26,
+    "profile_key": 101702,
+    "pred_mode_file_off": "0x3a0c3d",
+    "m_param_file_off": "0x3c427f",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     24,
+     24
+    ]
+   },
+   {
+    "descriptor": 407,
+    "family": "hs",
+    "format": "4:2:0 10-bit",
+    "rate": "25p",
+    "quality_class": 26,
+    "profile_key": 101901,
+    "pred_mode_file_off": "0x3a0ccd",
+    "m_param_file_off": "0x3c437f",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     24,
+     24
+    ]
+   },
+   {
+    "descriptor": 408,
+    "family": "hs",
+    "format": "4:2:0 10-bit",
+    "rate": "23.98p",
+    "quality_class": 26,
+    "profile_key": 102000,
+    "pred_mode_file_off": "0x3a0d5d",
+    "m_param_file_off": "0x3c447f",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     24,
+     24
+    ]
+   },
+   {
+    "descriptor": 428,
+    "family": "hs",
+    "format": "4:2:2 10-bit",
+    "rate": "25p",
+    "quality_class": 24,
+    "profile_key": 101609,
+    "pred_mode_file_off": "0x3a189d",
+    "m_param_file_off": "0x3c587f",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     24,
+     24
+    ]
+   },
+   {
+    "descriptor": 480,
+    "family": "hs",
+    "format": "4:2:2 10-bit",
+    "rate": "25p",
+    "quality_class": 36,
+    "profile_key": 101607,
+    "pred_mode_file_off": "0x3a35dd",
+    "m_param_file_off": "0x3c8c7f",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     24,
+     24
+    ]
+   },
+   {
+    "descriptor": 481,
+    "family": "hs",
+    "format": "4:2:2 10-bit",
+    "rate": "23.98p",
+    "quality_class": 36,
+    "profile_key": 101703,
+    "pred_mode_file_off": "0x3a366d",
+    "m_param_file_off": "0x3c8d7f",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     24,
+     24
+    ]
+   },
+   {
+    "descriptor": 511,
+    "family": "hs",
+    "format": "4:2:0 10-bit",
+    "rate": "25p",
+    "quality_class": 41,
+    "profile_key": 101907,
+    "pred_mode_file_off": "0x3a474d",
+    "m_param_file_off": "0x3cab7f",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     24,
+     24
+    ]
+   },
+   {
+    "descriptor": 512,
+    "family": "hs",
+    "format": "4:2:0 10-bit",
+    "rate": "23.98p",
+    "quality_class": 41,
+    "profile_key": 102003,
+    "pred_mode_file_off": "0x3a47dd",
+    "m_param_file_off": "0x3cac7f",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     24,
+     24
+    ]
+   },
+   {
+    "descriptor": 520,
+    "family": "hs",
+    "format": "4:2:0 10-bit",
+    "rate": "25p",
+    "quality_class": 34,
+    "profile_key": 101905,
+    "pred_mode_file_off": "0x3a4c5d",
+    "m_param_file_off": "0x3cb47f",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     24,
+     24
+    ]
+   },
+   {
+    "descriptor": 521,
+    "family": "hs",
+    "format": "4:2:0 10-bit",
+    "rate": "23.98p",
+    "quality_class": 34,
+    "profile_key": 102002,
+    "pred_mode_file_off": "0x3a4ced",
+    "m_param_file_off": "0x3cb57f",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     24,
+     24
+    ]
+   },
+   {
+    "descriptor": 537,
+    "family": "hs",
+    "format": "4:2:2 10-bit",
+    "rate": "23.98p",
+    "quality_class": 34,
+    "profile_key": 101705,
+    "pred_mode_file_off": "0x3a55ed",
+    "m_param_file_off": "0x3cc57f",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     24,
+     24
+    ]
+   },
+   {
+    "descriptor": 563,
+    "family": "hs",
+    "format": "4:2:2 10-bit",
+    "rate": "25p",
+    "quality_class": 32,
+    "profile_key": 101611,
+    "pred_mode_file_off": "0x3a648d",
+    "m_param_file_off": "0x3cdf7f",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     24,
+     24
+    ]
+   },
+   {
+    "descriptor": 5,
+    "family": "s",
+    "format": "4:2:0 8-bit",
+    "rate": "25p",
+    "quality_class": 26,
+    "profile_key": 3,
+    "pred_mode_file_off": "0x392aad",
+    "m_param_file_off": "0x3aaf83",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     12,
+     24
+    ]
+   },
+   {
+    "descriptor": 6,
+    "family": "s",
+    "format": "4:2:0 8-bit",
+    "rate": "23.98p",
+    "quality_class": 26,
+    "profile_key": 4,
+    "pred_mode_file_off": "0x392b3d",
+    "m_param_file_off": "0x3ab083",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     12,
+     24
+    ]
+   },
+   {
+    "descriptor": 8,
+    "family": "s",
+    "format": "4:2:0 8-bit",
+    "rate": "25p",
+    "quality_class": 33,
+    "profile_key": 6,
+    "pred_mode_file_off": "0x392c5d",
+    "m_param_file_off": "0x3ab283",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     12,
+     24
+    ]
+   },
+   {
+    "descriptor": 9,
+    "family": "s",
+    "format": "4:2:0 8-bit",
+    "rate": "23.98p",
+    "quality_class": 33,
+    "profile_key": 7,
+    "pred_mode_file_off": "0x392ced",
+    "m_param_file_off": "0x3ab383",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     12,
+     24
+    ]
+   },
+   {
+    "descriptor": 40,
+    "family": "s",
+    "format": "4:2:2 10-bit",
+    "rate": "25p",
+    "quality_class": 24,
+    "profile_key": 102501,
+    "pred_mode_file_off": "0x393e5d",
+    "m_param_file_off": "0x3ad283",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     12,
+     24
+    ]
+   },
+   {
+    "descriptor": 41,
+    "family": "s",
+    "format": "4:2:2 10-bit",
+    "rate": "23.98p",
+    "quality_class": 24,
+    "profile_key": 102600,
+    "pred_mode_file_off": "0x393eed",
+    "m_param_file_off": "0x3ad383",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     12,
+     24
+    ]
+   },
+   {
+    "descriptor": 43,
+    "family": "s",
+    "format": "4:2:2 10-bit",
+    "rate": "25p",
+    "quality_class": 34,
+    "profile_key": 102503,
+    "pred_mode_file_off": "0x39400d",
+    "m_param_file_off": "0x3ad583",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     12,
+     24
+    ]
+   },
+   {
+    "descriptor": 44,
+    "family": "s",
+    "format": "4:2:2 10-bit",
+    "rate": "23.98p",
+    "quality_class": 34,
+    "profile_key": 102601,
+    "pred_mode_file_off": "0x39409d",
+    "m_param_file_off": "0x3ad683",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     12,
+     24
+    ]
+   },
+   {
+    "descriptor": 58,
+    "family": "s",
+    "format": "4:2:0 8-bit",
+    "rate": "25p",
+    "quality_class": 34,
+    "profile_key": 102909,
+    "pred_mode_file_off": "0x39487d",
+    "m_param_file_off": "0x3ae483",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     12,
+     24
+    ]
+   },
+   {
+    "descriptor": 59,
+    "family": "s",
+    "format": "4:2:0 8-bit",
+    "rate": "23.98p",
+    "quality_class": 34,
+    "profile_key": 103004,
+    "pred_mode_file_off": "0x39490d",
+    "m_param_file_off": "0x3ae583",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     12,
+     24
+    ]
+   },
+   {
+    "descriptor": 61,
+    "family": "s",
+    "format": "4:2:0 8-bit",
+    "rate": "25p",
+    "quality_class": 4,
+    "profile_key": 102911,
+    "pred_mode_file_off": "0x394a2d",
+    "m_param_file_off": "0x3ae783",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     12,
+     24
+    ]
+   },
+   {
+    "descriptor": 62,
+    "family": "s",
+    "format": "4:2:0 8-bit",
+    "rate": "23.98p",
+    "quality_class": 4,
+    "profile_key": 103005,
+    "pred_mode_file_off": "0x394abd",
+    "m_param_file_off": "0x3ae883",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     12,
+     24
+    ]
+   },
+   {
+    "descriptor": 75,
+    "family": "s",
+    "format": "4:2:2 10-bit",
+    "rate": "25p",
+    "quality_class": 21,
+    "profile_key": 102409,
+    "pred_mode_file_off": "0x39520d",
+    "m_param_file_off": "0x3af583",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     12,
+     24
+    ]
+   },
+   {
+    "descriptor": 76,
+    "family": "s",
+    "format": "4:2:2 10-bit",
+    "rate": "23.98p",
+    "quality_class": 21,
+    "profile_key": 102410,
+    "pred_mode_file_off": "0x39529d",
+    "m_param_file_off": "0x3af683",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     12,
+     24
+    ]
+   },
+   {
+    "descriptor": 78,
+    "family": "s",
+    "format": "4:2:2 10-bit",
+    "rate": "25p",
+    "quality_class": 39,
+    "profile_key": 102603,
+    "pred_mode_file_off": "0x3953bd",
+    "m_param_file_off": "0x3af883",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     12,
+     24
+    ]
+   },
+   {
+    "descriptor": 79,
+    "family": "s",
+    "format": "4:2:2 10-bit",
+    "rate": "23.98p",
+    "quality_class": 39,
+    "profile_key": 102604,
+    "pred_mode_file_off": "0x39544d",
+    "m_param_file_off": "0x3af983",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     12,
+     24
+    ]
+   },
+   {
+    "descriptor": 141,
+    "family": "s",
+    "format": "4:2:2 10-bit",
+    "rate": "23.98p",
+    "quality_class": 26,
+    "profile_key": 102607,
+    "pred_mode_file_off": "0x39772d",
+    "m_param_file_off": "0x3b3783",
+    "stock": [
+     3,
+     3
+    ],
+    "design": [
+     1,
+     1
+    ],
+    "n_param_nd_param": [
+     12,
+     24
+    ]
+   }
+  ],
+  "rule_checked_against_sonys_tables": {
+   "codec_codectype_pred_mode_m_param_counts": [
+    {
+     "codec": 4,
+     "codec_type": 1,
+     "pred_mode": 2,
+     "m_param": 2,
+     "descriptors": 22
+    },
+    {
+     "codec": 4,
+     "codec_type": 1,
+     "pred_mode": 3,
+     "m_param": 3,
+     "descriptors": 101
+    },
+    {
+     "codec": 14,
+     "codec_type": 2,
+     "pred_mode": 3,
+     "m_param": 3,
+     "descriptors": 115
+    },
+    {
+     "codec": 14,
+     "codec_type": 2,
+     "pred_mode": 4,
+     "m_param": 4,
+     "descriptors": 107
+    },
+    {
+     "codec": 17,
+     "codec_type": 1,
+     "pred_mode": 1,
+     "m_param": 1,
+     "descriptors": 40
+    },
+    {
+     "codec": 19,
+     "codec_type": 2,
+     "pred_mode": 1,
+     "m_param": 1,
+     "descriptors": 58
+    },
+    {
+     "codec": 20,
+     "codec_type": 1,
+     "pred_mode": 1,
+     "m_param": 1,
+     "descriptors": 150
+    },
+    {
+     "codec": 21,
+     "codec_type": 2,
+     "pred_mode": 1,
+     "m_param": 1,
+     "descriptors": 36
+    },
+    {
+     "codec": 24,
+     "codec_type": 1,
+     "pred_mode": 0,
+     "m_param": 0,
+     "descriptors": 60
+    }
+   ],
+   "rule": "PredMode == MParam in every AVC and HEVC descriptor (689)",
+   "sonys_two_core_m1_avc_3840_wide": [
+    335,
+    337,
+    339,
+    341,
+    343
+   ],
+   "sonys_two_core_m1_hevc_3840_wide": [
+    596,
+    597,
+    599,
+    600,
+    632,
+    634,
+    636,
+    638,
+    640
+   ]
+  },
+  "edit_list": {
+   "site": "0x11d5e4",
+   "function": "0x11f030 (the writer set-up of a normal recording; it calls the track builder 0x222b18 at 0x11f540)",
+   "stock": "intra flag -> 0; [x21+4] set -> HEVC 0, AVC 1; otherwise AVC 1, HEVC 2 for frame-rate codes 4-11 else 1 (csel at 0x11f4e0)",
+   "design": "mov w0, #0 at 0x11f4e0 -> HEVC 0 on the normal path; nothing else changes (build/emu_elst_site_v3.py, every comb, rate code and flag)",
+   "why_not_0x118004": "F982 changed 0x118004 in 0x117da8 (another caller of 0x222b18, 0x1179ac, reached through a pointer); on the camera it changed nothing (C0556 HEVC and C0557 AVC both still start one frame in, F986), so it is left stock here",
+   "avc": "AVC keeps one frame: its encoder gives every picture a one-frame composition offset even with M = 1 (C0557: ctts 1001 throughout), which that frame cancels",
+   "table": "0x2e0bb0 mpr::pconv::m_vpcSt (7 words a comb: codec, ..., intra flag +0x18)"
+  },
+  "source": "F980, F981, F982; F986 (v2 on the camera: no held frames in XAVC HS and XAVC S, but 0x118004 did not reach the edit list)",
+  "replaces": "ogfile57r300m1_v2: the same av-cam sites; its libmpr.so site 0x118004 is not used by a normal recording"
+ },
+ "libmpr_code_guards": [
+  {
+   "site": "0x11d5e4",
+   "guards": [
+    {
+     "file_off": "0x11d5d0",
+     "bytes": "1f040071c14a0054211000513f1c0071"
+    },
+    {
+     "file_off": "0x11d5e0",
+     "bytes": "41008052"
+    },
+    {
+     "file_off": "0x11d5e8",
+     "bytes": "a0330cb9"
+    },
+    {
+     "file_off": "0x11df28",
+     "bytes": "20b6ff3520008052aefdff17"
+    },
+    {
+     "file_off": "0x2e0c3c",
+     "bytes": "01000000000f7008"
+    },
+    {
+     "file_off": "0x2e0c50",
+     "bytes": "0100000000000000"
+    },
+    {
+     "file_off": "0x2e0c74",
+     "bytes": "01000000000f7008"
+    },
+    {
+     "file_off": "0x2e0c88",
+     "bytes": "0100000000000000"
+    }
+   ]
+  },
+  {
+   "site": "0x21ff68",
+   "guards": [
+    {
+     "file_off": "0x21ff60",
+     "bytes": "44018052"
+    },
+    {
+     "file_off": "0x21ff64",
+     "bytes": "45008052"
+    },
+    {
+     "file_off": "0x21ff70",
+     "bytes": "f7ffff17"
+    },
+    {
+     "file_off": "0x21ff74",
+     "bytes": "22008052"
+    },
+    {
+     "file_off": "0x220098",
+     "bytes": "e503022a"
+    },
+    {
+     "file_off": "0x22009c",
+     "bytes": "44018052"
+    },
+    {
+     "file_off": "0x2200a8",
+     "bytes": "beffff17"
+    },
+    {
+     "file_off": "0x2200ac",
+     "bytes": "22008052"
+    },
+    {
+     "file_off": "0x221530",
+     "bytes": "1f044071"
+    },
+    {
+     "file_off": "0x221534",
+     "bytes": "c0020054"
+    },
+    {
+     "file_off": "0x22153c",
+     "bytes": "1f00016b"
+    },
+    {
+     "file_off": "0x221540",
+     "bytes": "eeffff17"
+    },
+    {
+     "file_off": "0x222ae4",
+     "bytes": "60008052"
+    },
+    {
+     "file_off": "0x222ae8",
+     "bytes": "c0035fd6"
+    },
+    {
+     "file_off": "0x222af0",
+     "bytes": "7f801671"
+    },
+    {
+     "file_off": "0x222af4",
+     "bytes": "e0070054"
+    },
+    {
+     "file_off": "0x222f20",
+     "bytes": "1f080071"
+    },
+    {
+     "file_off": "0x222f24",
+     "bytes": "01deff54"
+    },
+    {
+     "file_off": "0x222f2c",
+     "bytes": "1f003c71"
+    },
+    {
+     "file_off": "0x222f30",
+     "bytes": "a1ddff54"
+    },
+    {
+     "file_off": "0x222f6c",
+     "bytes": "c0928452"
+    },
+    {
+     "file_off": "0x222f70",
+     "bytes": "f2feff17"
+    },
+    {
+     "file_off": "0x222f78",
+     "bytes": "1f003c71"
+    },
+    {
+     "file_off": "0x222f7c",
+     "bytes": "a0020054"
+    },
+    {
+     "file_off": "0x223104",
+     "bytes": "3f044071"
+    },
+    {
+     "file_off": "0x223108",
+     "bytes": "80000054"
+    },
+    {
+     "file_off": "0x223110",
+     "bytes": "3f00006b"
+    },
+    {
+     "file_off": "0x223114",
+     "bytes": "f0ffff17"
+    }
+   ]
+  },
+  {
+   "site": "0x21ff6c",
+   "guards": []
+  },
+  {
+   "site": "0x2200a0",
+   "guards": []
+  },
+  {
+   "site": "0x2200a4",
+   "guards": []
+  },
+  {
+   "site": "0x221538",
+   "guards": []
+  },
+  {
+   "site": "0x222aec",
+   "guards": []
+  },
+  {
+   "site": "0x222f28",
+   "guards": []
+  },
+  {
+   "site": "0x222f74",
+   "guards": []
+  },
+  {
+   "site": "0x22310c",
+   "guards": []
+  }
+ ],
+ "mp4_meta": {
+  "what": "the track config 0x222b18 builds (tkhd, stsd and Sony's PROF video entry) says the stream's size; Sony's XML (NonRealTimeMeta) is unchanged: its size keys the videoCodec name lookup",
+  "sites": [
+   {
+    "file_off": "0x21ff68",
+    "stock": "mov w6, #0x870",
+    "note": "MP4 track height, XAVC S 4K (AVC): 2160 -> 3840"
+   },
+   {
+    "file_off": "0x21ff6c",
+    "stock": "mov w7, #0xf00",
+    "note": "MP4 track width, XAVC S 4K (AVC): 3840 -> 5760"
+   },
+   {
+    "file_off": "0x2200a0",
+    "stock": "mov w6, #0x870",
+    "note": "MP4 track height, XAVC HS 4K (HEVC): 2160 -> 3840"
+   },
+   {
+    "file_off": "0x2200a4",
+    "stock": "mov w7, #0xf00",
+    "note": "MP4 track width, XAVC HS 4K (HEVC): 3840 -> 5760"
+   },
+   {
+    "file_off": "0x221538",
+    "stock": "mov w1, #0x1e00",
+    "note": "stsd entry set-up 0x221490: its 7680 compare -> 5760, so a 5760-wide entry is built (else it returns 2)"
+   },
+   {
+    "file_off": "0x222aec",
+    "stock": "ldrh w3, [x1, #0x2a]",
+    "note": "PROF profile id 0x222ac0, AVC: width read -> the constant 3840 (the UHD ids)"
+   },
+   {
+    "file_off": "0x222f28",
+    "stock": "ldrh w0, [x1, #0x2a]",
+    "note": "PROF profile id 0x222ac0, HEVC chroma code 2: width read -> the constant 3840"
+   },
+   {
+    "file_off": "0x222f74",
+    "stock": "ldrh w0, [x1, #0x2a]",
+    "note": "PROF profile id 0x222ac0, HEVC chroma code 1: width read -> the constant 3840"
+   },
+   {
+    "file_off": "0x22310c",
+    "stock": "mov w0, #0x1e00",
+    "note": "PROF pixel aspect 0x2230b4: its 7680 compare -> 5760 (1:1), else it returns 3"
+   }
+  ],
+  "guards": [
+   {
+    "file_off": "0x21ff60",
+    "bytes": "44018052"
+   },
+   {
+    "file_off": "0x21ff64",
+    "bytes": "45008052"
+   },
+   {
+    "file_off": "0x21ff70",
+    "bytes": "f7ffff17"
+   },
+   {
+    "file_off": "0x21ff74",
+    "bytes": "22008052"
+   },
+   {
+    "file_off": "0x220098",
+    "bytes": "e503022a"
+   },
+   {
+    "file_off": "0x22009c",
+    "bytes": "44018052"
+   },
+   {
+    "file_off": "0x2200a8",
+    "bytes": "beffff17"
+   },
+   {
+    "file_off": "0x2200ac",
+    "bytes": "22008052"
+   },
+   {
+    "file_off": "0x221530",
+    "bytes": "1f044071"
+   },
+   {
+    "file_off": "0x221534",
+    "bytes": "c0020054"
+   },
+   {
+    "file_off": "0x22153c",
+    "bytes": "1f00016b"
+   },
+   {
+    "file_off": "0x221540",
+    "bytes": "eeffff17"
+   },
+   {
+    "file_off": "0x222ae4",
+    "bytes": "60008052"
+   },
+   {
+    "file_off": "0x222ae8",
+    "bytes": "c0035fd6"
+   },
+   {
+    "file_off": "0x222af0",
+    "bytes": "7f801671"
+   },
+   {
+    "file_off": "0x222af4",
+    "bytes": "e0070054"
+   },
+   {
+    "file_off": "0x222f20",
+    "bytes": "1f080071"
+   },
+   {
+    "file_off": "0x222f24",
+    "bytes": "01deff54"
+   },
+   {
+    "file_off": "0x222f2c",
+    "bytes": "1f003c71"
+   },
+   {
+    "file_off": "0x222f30",
+    "bytes": "a1ddff54"
+   },
+   {
+    "file_off": "0x222f6c",
+    "bytes": "c0928452"
+   },
+   {
+    "file_off": "0x222f70",
+    "bytes": "f2feff17"
+   },
+   {
+    "file_off": "0x222f78",
+    "bytes": "1f003c71"
+   },
+   {
+    "file_off": "0x222f7c",
+    "bytes": "a0020054"
+   },
+   {
+    "file_off": "0x223104",
+    "bytes": "3f044071"
+   },
+   {
+    "file_off": "0x223108",
+    "bytes": "80000054"
+   },
+   {
+    "file_off": "0x223110",
+    "bytes": "3f00006b"
+   },
+   {
+    "file_off": "0x223114",
+    "bytes": "f0ffff17"
+   }
+  ],
+  "checked": "build/emu_mp4_meta.py --build fx30_601 --both -> evidence/fx30/encoder/mp4_meta_emu_fx30_both.json"
+ }
+}

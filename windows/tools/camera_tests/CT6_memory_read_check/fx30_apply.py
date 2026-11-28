@@ -3,6 +3,8 @@
   python fx30_apply.py apply    [--no-screen] [--no-meta] [--variant-b] [--dry-run]
   python fx30_apply.py putback  [--no-screen] [--variant-b] [--dry-run]
   python fx30_apply.py switch-to-b | switch-to-a  [--dry-run]         (A/B test of the sensor step, in the same power-on)
+  python fx30_apply.py apply --57 [--no-screen] [--no-meta] [--dry-run]     5.7K: a real 5760x3840 file, 300 Mbps, no B pictures (NOT RUN)
+  python fx30_apply.py putback --57 [--no-screen] [--dry-run]
   python fx30_apply.py screen | screen-putback  [--dry-run]
   python fx30_apply.py playback | playback-putback  [--dry-run]      (optional, NOT RUN ON ANY CAMERA: in-camera playback)
   python fx30_apply.py flash | flash-putback | flash-check  [--dry-run]   (NOT RUN ON ANY CAMERA: an external flash with the electronic shutter)
@@ -41,7 +43,9 @@ the sensor, shown at 3:2 on the rear screen. How it is built (modding/FX30_PORT.
     timing, and squeezes the picture into the stock 4336x2438 first-stage picture (the A7 IV's ogsq_v3 method).
   - KIT v1 (ran on three FX30s, 2026-11-25/26) changed the tables and records but not the sensor's registers: every step applied, the file was
     3840x2560, but the sensor still sent 3348 rows, so the picture filled only the top 2160 rows (black below) with a shifting blue cast.
-    KIT v2 writes the registers too. v2 HAS NOT RUN ON A CAMERA.
+    KIT v2 writes the registers too. v2 RECORDS ON FX30s (the repo's issues, 2026-11-26/27: NTSC and PAL, XAVC S 4K 24p / 25p: the whole
+    3840x2560 picture with right colours; XAVC HS 4:2:2 restarts the camera when recording starts; the power switch removes the image
+    processor's part of the patch after about ten seconds off and leaves the encoder's part).
   - L16 makes the 4K output 3840x2560; L19 sets up the encoder and the MP4 headers for it (the FX3 kit's encoder step, moved);
   - S16 shows the 3:2 picture on the rear screen and sets the camera's own De-Squeeze Display ratios for it (the FX3 kit's screen step).
   - No raw-write-buffer step: the FX30's stock buffer already holds the taller first stage.
@@ -52,6 +56,16 @@ the sensor, shown at 3:2 on the rear screen. How it is built (modding/FX30_PORT.
            its bytes already applied says NOTHING TO DO and counts as passed.
   putback  the reverse: S17, L20, L17, L6 (--no-screen leaves out S17). A cold boot (battery out for 10 seconds) also undoes everything.
            If L6 finds that the sensor side holds variant B, it writes nothing and the script runs B6 instead (--variant-b: B6 straight away).
+  5.7K (apply --57; added 2026-11-28, NOT RUN ON ANY FX30): the A7 IV's real 5760x3840 state on the FX30. The sensor window is the 4K open
+           gate's (5952x3968 from row 94, which records on FX30s). What differs from the 4K apply:
+             K5   the two picture records: the first-stage scaler gives 5760x3840 instead of 4336x2438 (real 5.7K rows and columns);
+             K16  four scaler units, a 30.8 MB output buffer, the output size 5760x3840 (in L16's place);
+             K19  the encoder on both cores, 300 Mbps on the 100M record settings, I and P pictures only (no B pictures), and MP4 headers
+                  that say 5760x3840 (M19 with --no-meta: the headers keep 3840x2160);
+             S16  the same screen step.
+           It is a state of its own: start from a cold boot, not from an applied 4K open gate. putback --57 runs S17, K20, K17, K6; a plain
+           putback finds the 5.7K steps too (each 4K put back that wrote nothing is followed by its 5.7K twin). The closing session reads
+           with the 5.7K twin of the dump (dump57), to which this state is READY.
   VARIANT B of the sensor step (an A/B test; apply --variant-b, or switch-to-b after a normal apply): ogsq_fx30_v2b is ogsq_fx30_v2 with the
            two values a tester reported clean colour with (repo issue 1): first phase-detect row = window row + 51 = 145 instead of 121,
            read-out length 2020 instead of 2014. Sensor registers, picture records and every other step are the same. A is the default
@@ -98,8 +112,9 @@ CARDSPEED = ("cardspeed", "cardspeed-putback", "cardspeed-check")
 INDEPENDENT = FLASH + CARDSPEED                  # steps that need only the identity lines of a saved check, not the open-gate sites stock
 READ_ONLY = ("flash-check", "cardspeed-check")
 VARIANT_B = {"L5": "B5", "L6": "B6"}             # --variant-b: the sensor step and its put back
-# putback: a sensor put back that wrote nothing because the other variant is in memory is followed by the other variant's put back
-OTHER_PUTBACK = {"L6": "B6", "B6": "L6"}
+K57 = {"L5": "K5", "L16": "K16", "L19": "K19", "N19": "M19", "L20": "K20", "L17": "K17", "L6": "K6"}     # --57: the 5.7K state's steps
+# putback: a put back that wrote nothing because another variant or state is in memory is followed by the others' put back, in this order
+OTHER_PUTBACK = {"L6": ("B6", "K6"), "B6": ("L6", "K6"), "K6": ("L6", "B6"), "L20": ("K20",), "K20": ("L20",), "L17": ("K17",), "K17": ("L17",)}
 RUNNER = HERE / "fx30_run.py"
 LISTER = HERE.parent / "CT1_usb_first_contact" / "ct1_stage2_service.py"
 STILL = "a still-image mode (press MODE, choose Program Auto, Aperture Priority, Shutter Priority or Manual Exposure with the control wheel, press its centre)"
@@ -129,7 +144,7 @@ def last_check():
     for folder, man in sessions():
         res = man.get("results", {})
         f = (res.get("ct6", {}).get("result") or {}).get("s3")
-        if res.get("which") in ("check", "dump") and f:       # a dump makes every check the check makes, and gives the same verdict
+        if res.get("which") in ("check", "dump", "check57", "dump57") and f:       # a dump makes every check the check makes; the 5.7K twins count
             current = "fx30read_v2 " in f.get("header", "") and "ILME-FX30 6.01" in f.get("header", "")
             return folder.name, current and bool(f.get("ready")) and not f.get("identity_differs")
     return None
@@ -198,8 +213,8 @@ def wait_for_replug(timeout=900):
     return True
 
 
-def movie_session():
-    """The closing read-only session, taken in movie mode."""
+def movie_session(dump="dump"):
+    """The closing read-only session, taken in movie mode (dump57 after the 5.7K apply: the dump to which that state is READY)."""
     say()
     say("=" * 78)
     say("One more session, and it only READS: it records what the camera holds after the apply, for the report.")
@@ -212,14 +227,14 @@ def movie_session():
     if not wait_for_replug():
         say("The camera did not come back as a USB drive. The steps are applied all the same.")
         return
-    cmd = [sys.executable, "-I", "-B", str(RUNNER), "dump", "--go", "--firmware-shown", FIRMWARE]
+    cmd = [sys.executable, "-I", "-B", str(RUNNER), dump, "--go", "--firmware-shown", FIRMWARE]
     clear = last_result_sha()
     if clear:
         cmd += ["--clear-result", clear]
     rc = subprocess.run(cmd).returncode
     which, f = step_outcome()
     say()
-    if rc or which != "dump" or not f:
+    if rc or which != dump or not f:
         say("The read-only session did not finish. The steps are applied all the same.")
         return
     decoded = f.get("decoded") or {}
@@ -258,8 +273,11 @@ def main():
     ap.add_argument("--no-movie-session", action="store_true", help="with apply or screen: leave out the closing read-only session in movie mode")
     ap.add_argument("--no-meta", action="store_true", help="with apply: the encoder step without the MP4 header heights (N19); the headers keep saying 3840x2160")
     ap.add_argument("--variant-b", action="store_true", help="with apply or putback: the sensor step's variant B (B5 / B6: first phase-detect row 145, read-out length 2020)")
+    ap.add_argument("--57", dest="k57", action="store_true", help="with apply or putback: the 5.7K state (K5, K16, K19 / M19: a real 5760x3840 file, 300 Mbps, no B pictures). NOT RUN ON ANY FX30")
     a = ap.parse_args()
     steps = STEPS[a.what]
+    if a.k57 and (a.what not in ("apply", "putback") or a.variant_b):
+        raise SystemExit("--57 goes with apply or putback, and not with --variant-b. Nothing was sent.")
     if a.variant_b and a.what not in ("apply", "putback"):
         raise SystemExit("--variant-b goes with apply or putback (after a normal apply use switch-to-b). Nothing was sent.")
     if a.variant_b:
@@ -270,13 +288,15 @@ def main():
         raise SystemExit("--no-meta goes with apply (the put back L20 puts back either encoder step). Nothing was sent.")
     if a.no_meta:
         steps = tuple("N19" if k == "L19" else k for k in steps)
+    if a.k57:
+        steps = tuple(K57.get(k, k) for k in steps)
     with_screen = not a.no_screen
     if a.what in ("apply", "putback") and with_screen:
         steps = steps + STEPS["screen"] if a.what == "apply" else STEPS["screen-putback"] + steps
     switching = a.what in ("switch-to-b", "switch-to-a")
     applying = a.what in ("apply", "screen", "playback") or switching
     closing = a.what in ("apply", "screen") or switching   # the closing read-only session in Movie: after the open-gate, screen or switch steps
-    extra = [OTHER_PUTBACK[k] for k in steps if a.what == "putback" and k in OTHER_PUTBACK]
+    extra = [x for k in steps if a.what == "putback" for x in OTHER_PUTBACK.get(k, ())]
     for k in list(steps) + extra:                    # every library must be the pinned one before anything starts
         name, sha, _ = fx30_run.WRITE_STEPS[k]
         p = fx30_run.S3 / name
@@ -342,9 +362,14 @@ def main():
         say("  It has to follow an apply of this kit in the same power-on. The two variants differ in two values (first phase-detect row,")
         say("  read-out length); A is the default, B has the values of the repo's issue 1.")
     elif applying:
-        say("KIT v2 HAS NOT RUN ON AN FX30 YET. Kit v1 ran on three: every step applied and the camera kept working, but the sensor stayed on")
-        say("  its stock window, so the picture filled only the top of the 3840x2560 frame, with a blue cast. v2 also writes the sensor's seven")
-        say("  window registers. No stock movie mode reads this many rows, so the sensor's answer is not known. Possible outcomes are in README.md.")
+        if "K5" in steps:
+            say("THE 5.7K STATE HAS NOT RUN ON ANY FX30. It is the A7 IV's working 5.7K state built for the FX30 and checked on the FX30's own code in")
+            say("  emulation. Its sensor window is the 4K open gate's, which records on FX30s; what is new is a first-stage picture of 5760x3840, the")
+            say("  output buffers for it and an encoder on both cores at about 300 Mbps. If the camera cannot do it, expect a restart or a broken")
+            say("  file when MOVIE starts or when recording starts, not lasting harm: a battery pull clears it. Start from a cold boot, not from an")
+            say("  applied 4K open gate.")
+        else:
+            say("The 4K open gate of this kit records on FX30s (NTSC and PAL, XAVC S 4K at 24p / 25p). Known limits are listed in README.md.")
     else:
         say("It has to follow an apply of this kit.")
     if a.what not in READ_ONLY:
@@ -377,11 +402,12 @@ def main():
             cmd += ["--clear-result", clear]
         rc = subprocess.run(cmd).returncode
         which, f = step_outcome()
-        other = OTHER_PUTBACK.get(k) if a.what == "putback" else None
-        if other and not rc and which == k and f and f.get("outcome") == "NOTHING WRITTEN":
-            # the sensor side holds the other variant: this put back wrote nothing (it writes only over its own bytes); run the other one
+        for other in (OTHER_PUTBACK.get(k, ()) if a.what == "putback" else ()):
+            if rc or which != k or not f or f.get("outcome") != "NOTHING WRITTEN":
+                break
+            # the camera holds another variant or the other state: this put back wrote nothing (it writes only over its own bytes); run the next one
             say()
-            say("%s wrote nothing: the sensor side does not hold its variant. Running the other variant's put back (%s)." % (k, other))
+            say("%s wrote nothing: the camera does not hold its bytes. Running the put back of the other variant or state (%s)." % (k, other))
             if not wait_for_drive(False):
                 raise SystemExit("The camera did not show up as a USB drive. Stopped before %s." % other)
             cmd = [sys.executable, "-I", "-B", str(RUNNER), other, "--go", "--writes-memory", "--firmware-shown", FIRMWARE]
@@ -441,6 +467,14 @@ def main():
         say("To return to stock: cardspeed_putback, or battery out for 10 seconds.")
     elif a.what == "cardspeed-putback":
         say("The card-speed step is put back: the camera checks the card's speed again at the next card mount or movie-setting change.")
+    if "K5" in steps:
+        say("THE 5.7K STATE IS APPLIED (not yet run on any FX30; please report exactly what happens).")
+        say("  Expected: XAVC S 4K at 24p (25p on a PAL camera) records a 5760x3840 file; on the 100M record settings at about 300 Mbps, with")
+        say("  I and P pictures only. Use a fast card (V90 or CFexpress Type A): 300 Mbps is 37 MB a second, and the camera's own card check")
+        say("  goes by the menu's record setting, not by the real rate.")
+        say("  SteadyShot: Off or Standard, not Active (Active asks for a larger picture than the 5.7K records hold).")
+        say("  Do not play 5.7K clips back on the camera (they do not play on the A7 IV either). Check them on a computer.")
+        say("  If the camera stops, restarts or records a broken file: set a still mode, replug USB and run dump_info_57, then send camera_private.")
     if "B5" in steps:
         say("The sensor step is VARIANT B (first phase-detect row 145, read-out length 2020). Please say so in your report.")
     elif switching:
@@ -475,10 +509,12 @@ def main():
         if a.no_movie_session:
             say(">>> BEFORE you unplug: set %s. Then unplug USB." % MOVIE)
         else:
-            movie_session()
+            movie_session("dump57" if "K5" in steps else "dump")
         say()
-        say("Record in XAVC S 4K at 24p (23.98p), or 25p on a PAL camera, first. Try XAVC HS 4K only after an XAVC S clip is good: under kit v1")
-        say("  one camera restarted when File Format was changed to XAVC HS with the patch applied (cause not known; please report what v2 does).")
+        say("Record in XAVC S 4K at 24p (23.98p), or 25p on a PAL camera. XAVC HS 4K: testers report that its 4:2:2 10-bit settings restart the")
+        say("  camera when recording starts (the patch is gone after the restart); 4:2:0 recorded for some. Use XAVC S unless you are testing HS.")
+        say("  Power: switching the camera off for more than about ten seconds removes the image processor's part and keeps the encoder's part,")
+        say("  which gives a 16:9 picture in a taller file. After any power-off, pull the battery for ten seconds and apply again.")
         say("  30p (and 24.00p on a PAL camera) read the tall window too, but their encoder is not set up: do not record them.")
         say("  Do not use 60p, 120p, S&Q or Proxy Recording.")
         say("If the rear screen first shows a 16:9 layout with a bar at the bottom: open and close MENU once (seen under kit v1).")
