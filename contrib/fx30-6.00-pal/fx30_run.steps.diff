@@ -1,0 +1,25 @@
+--- ref-clones/ArcaneLantern__fx30-open-gate-test__20261127/windows/tools/camera_tests/CT6_memory_read_check/fx30_run.py.orig-backup	2026-11-27 00:49:20.114152600 +0800
++++ ref-clones/ArcaneLantern__fx30-open-gate-test__20261127/windows/tools/camera_tests/CT6_memory_read_check/fx30_run.py	2026-11-27 22:20:37.629748700 +0800
+@@ -72,6 +72,22 @@
+     # decode channel (avdec8k_fx30_v1: four code words and one table word of av-cam.bin, readcheck.c levels 29 / 30, the FX3 kit's step moved).
+     "P29": ("libJit_fx30_P29.so", "11717457fb0a22c4a410b3167862310f144b7eb12a290dffca2c2803e33b7aad", "apply the playback decoder avdec8k_fx30_v1 (the A7 IV's 7690x4320 decode channel and its memory: 4 code words and 1 table word of av-cam.bin)"),
+     "P30": ("libJit_fx30_P30.so", "811589289151f5c0a816bb10144b55aebd6416e3c7dd428e79eaad95817f0d31", "put back the playback decoder avdec8k_fx30_v1"),
++    # N98: locally rebuilt encoder step for the RELINKED 6.01 body only (libmpr sha 8f37bc75): mp_lm sites moved
++    # -0x19b8 (MP4 height code) / -0x3d00 (g_videoParamComb), from issue#4's expected_mp_ogfile2560_hs_s_fx30_relink.h.
++    # NOT author-published, NOT PIN-verified by the author: built locally with zig 0.16.0. Use only on this relink body.
++    "N98": ("libJit_fx30_L19_relink.so", "f45f1f2f37728954abbbeaf34e7fb0b77c4fc69047a3c0a19326e685f30980eb", "RELINK rebuild: apply encoder design ogfile2560_hs_s_fx30_v2 at shifted libmpr addresses (MP4 headers 3840x2560)"),
++    "N97": ("libJit_fx30_N16.so", "e1d5028baef3c93d8afab4c6b32fa85b9fe2cc7e7387d54ab35b543ab28f256a", "6.00 rebuild: apply rear-screen design lcd32dsq_fx30_v1 at shifted 6.00 addresses (3:2 screen, focus frames, De-Squeeze), linked against local 6.00 libsencore.so"),
++    # 50p open gate (server-built 2026-11-27; PIN = the server's published SHA-256, re-verified locally byte-for-byte):
++    # N99 = sensor step for mode 0x830 (all sites STOCK on this 6.00 body, verified 2026-11-27 21:25 — F-240).
++    # N100 = encoder step (A6700 contributed design mapped by -0xf90, plus FX30's own libmpr rows).
++    "N99": ("libJit_fx30_L5_50p_sensor.so", "388f14e1af244d0d3681f890ab4c7f6389d25b551019c9651cfd460d5effb5e6", "50p: apply the sensor-side design ogsq50 (mode 0x830, PAL 50Hz records)"),
++    "N96": ("libJit_fx30_L6_50p_sensor.so", "98996e2efe708f2b9b6ff266f695bb6032c6631a4542ce01c9a817eb3217db4a", "50p: put back the sensor-side design ogsq50"),
++    "N100": ("libJit_fx30_L19_50p.so", "a44867abaf9549e58f222d4e8c3057e8cdcd0560aae8700df58cff482e0f18d8", "50p: apply the encoder-side design ogfile50p (A6700 contributed mapped -0xf90; MP4 headers 3840x2560)"),
++    "N101": ("libJit_fx30_L20_50p.so", "76a2ac0f74e8bd728fa453f400acfda9d7efdc961c6c6695dbd12f4049051496", "50p: put back the encoder-side design ogfile50p"),
++    # N102/N103: the same 50p encoder design RELINKED for this 6.00 body (libmpr 8f37bc75): mp_lm moved -0x19b8 (MP4 code) / -0x3d00
++    # (g_videoParamComb), built locally with ziglang 0.16.0 from expected_mp_ogfile50p_fx30_relink.h. Use on this body only.
++    "N102": ("libJit_fx30_L19_50p_relink.so", "b6d009db18aa61a7b03fb91cbd0433840bd65acf8325fc77096d94c9a99251a2", "50p RELINK: apply encoder design ogfile50p at shifted libmpr addresses (incl. the 50p HEVC descriptors UseCore=2)"),
++    "N103": ("libJit_fx30_L20_50p_relink.so", "569b756907b6a6a228391977afc1d0cddc5260cce9855e0f86f0053050a183d4", "50p RELINK: put back the encoder design ogfile50p"),
+ }
+ PINS.update({k: v[:2] for k, v in WRITE_STEPS.items()})
+ LEVELS.update({k: {"L": 200, "S": 300, "N": 500, "P": 600, "B": 700}[k[0]] + int(k[1:]) for k in WRITE_STEPS})
